@@ -3,10 +3,7 @@
    ------------------------------------------------------------
    Hier stellst du Owner-Zugang und Grunddaten ein.
 
-   Standard-Zugang (BITTE SOFORT ÄNDERN):
-     Benutzername: admin
-     Passwort:     Blog2026!
-
+   
    Passwort ändern:
      1. Als Owner anmelden → Dashboard → „Einstellungen & Daten“
      2. Unter „Passwort ändern“ neues Passwort eingeben
@@ -21,7 +18,7 @@ window.BLOG_CONFIG = {
   OWNER_DISPLAY_NAME: 'Blog-Owner',
 
   /* Owner-Anmeldung */
-  OWNER_USERNAME: 'admin',
+  OWNER_USERNAME: 'Felix',
   PASSWORD_SALT: 'aendere-mich-7f3a9c',
   OWNER_PASSWORD_SHA256: 'a80c43f5c42750be90ef3829872d6c009487dab226f13d8231a33220a82ca175',
 
