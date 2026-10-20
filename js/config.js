@@ -23,7 +23,7 @@ window.BLOG_CONFIG = {
   /* Owner-Anmeldung */
   OWNER_USERNAME: 'admin',
   PASSWORD_SALT: 'aendere-mich-7f3a9c',
-  OWNER_PASSWORD_SHA256: '54653c68c071058830544e0c320e97dcfbdc991407a26d6add18dc7d034d81e5',
+  OWNER_PASSWORD_SHA256: 'a80c43f5c42750be90ef3829872d6c009487dab226f13d8231a33220a82ca175',
 
   /* Sicherheit */
   OWNER_SESSION_MINUTES: 120, // automatische Abmeldung nach Inaktivität
