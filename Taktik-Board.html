@@ -1,0 +1,1875 @@
+<title>Schiedsrichter-Taktikboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: Schiedsrichter-Arbeitsplatz – links Kader & Gespann, Mitte Spielfeld + Zeitleiste, rechts Sichtanalyse & Notizen */
+:root{
+  --bg:#E9EEEB; --panel:#F8FAF9; --panel-2:#EEF2F0; --ink:#16201B; --muted:#56655D; --line:#D2DBD6;
+  --accent:#E0A800; --accent-ink:#1E1700; --accent-soft:#FFF2C2;
+  --ok:#17834A; --bad:#C8102E; --warn:#7C8A83;
+  --chip-ok:#DDF3E5; --chip-bad:#FBE0E4; --chip-warn:#E7ECE9;
+  --shadow:0 1px 2px rgba(20,30,25,.08),0 4px 14px rgba(20,30,25,.06);
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1311; --panel:#161C19; --panel-2:#1D2420; --ink:#E5ECE8; --muted:#94A39B; --line:#2B3530;
+  --accent:#F2BE1A; --accent-ink:#1E1700; --accent-soft:#3A3010;
+  --ok:#3DD47E; --bad:#FF5A6E; --warn:#9AA7A0;
+  --chip-ok:#173825; --chip-bad:#40161E; --chip-warn:#252D29;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1311; --panel:#161C19; --panel-2:#1D2420; --ink:#E5ECE8; --muted:#94A39B; --line:#2B3530;
+  --accent:#F2BE1A; --accent-ink:#1E1700; --accent-soft:#3A3010;
+  --ok:#3DD47E; --bad:#FF5A6E; --warn:#9AA7A0;
+  --chip-ok:#173825; --chip-bad:#40161E; --chip-warn:#252D29;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3); color-scheme:dark}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:13.5px;overflow:hidden}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.app{height:100%;display:grid;grid-template-columns:288px minmax(0,1fr) 330px;grid-template-rows:auto minmax(0,1fr);
+  grid-template-areas:"top top top" "left center right";gap:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px}
+header.top{grid-area:top;display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap}
+.brand svg{flex:none}
+.sep{width:1px;height:24px;background:var(--line)}
+.grow{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:6px 10px;cursor:pointer;line-height:1.2;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.ghost{background:transparent}
+.btn.small{padding:3px 8px;font-size:12.5px}
+.btn.danger{color:var(--bad)}
+.btn.icon{padding:6px 7px}
+.btn svg{width:16px;height:16px;flex:none}
+select,input[type=text],input[type=number],textarea{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 7px;min-width:0}
+input[type=color]{width:30px;height:26px;padding:0 2px;border:1px solid var(--line);border-radius:6px;background:var(--panel);cursor:pointer}
+input[type=range]{accent-color:var(--accent);width:100%}
+input[type=checkbox]{accent-color:var(--accent)}
+.side{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:auto;min-height:0;box-shadow:var(--shadow)}
+.side.left{grid-area:left}.side.right{grid-area:right}
+.center{grid-area:center;display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0}
+details.sec{border-bottom:1px solid var(--line)}
+details.sec>summary{list-style:none;cursor:pointer;padding:10px 14px;display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-weight:700;font-size:15.5px;text-transform:uppercase;letter-spacing:.05em}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::after{content:"";margin-left:auto;width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
+details.sec[open]>summary::after{transform:rotate(45deg)}
+.sec-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.row>label{color:var(--muted)}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.hint{color:var(--muted);font-size:12px;line-height:1.45}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.plist{display:flex;flex-direction:column;gap:3px}
+.prow{display:grid;grid-template-columns:22px 46px minmax(0,1fr) 28px;gap:5px;align-items:center}
+.prow input[type=number]{width:100%;padding:3px 4px;text-align:center}
+.prow input[type=text]{width:100%;padding:3px 6px}
+.dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.9);box-shadow:0 0 0 1px rgba(0,0,0,.25);cursor:pointer;padding:0}
+.dot.gk{border-radius:5px}
+.prow.sel{background:var(--accent-soft);border-radius:6px}
+.lockbtn{border:1px solid transparent;background:none;cursor:pointer;border-radius:5px;padding:3px;color:var(--muted)}
+.lockbtn.on{color:var(--bad);border-color:var(--line)}
+.lockbtn svg{width:15px;height:15px}
+.offrow{display:grid;grid-template-columns:56px 1fr auto auto;gap:6px;align-items:center}
+.pill{display:inline-flex;align-items:center;padding:1px 7px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--chip-ok);color:var(--ok)}
+.pill.bad{background:var(--chip-bad);color:var(--bad)}
+.pill.warn{background:var(--chip-warn);color:var(--warn)}
+/* toolbar */
+.toolbar{display:flex;gap:6px;align-items:center;overflow-x:auto;padding:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);scrollbar-width:thin}
+.tgroup{display:flex;gap:2px;align-items:center;padding-right:6px;border-right:1px solid var(--line)}
+.tgroup:last-child{border-right:0}
+.tbtn{display:flex;flex-direction:column;align-items:center;gap:1px;border:1px solid transparent;background:none;border-radius:7px;padding:4px 6px;cursor:pointer;min-width:46px;color:var(--ink)}
+.tbtn span{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.tbtn svg{width:19px;height:19px}
+.tbtn:hover{background:var(--panel-2)}
+.tbtn.on{background:var(--accent-soft);border-color:var(--accent)}
+.tbtn.on span{color:var(--ink)}
+.tsel{font-size:12px;padding:3px 4px}
+/* stage */
+.stage-wrap{position:relative;flex:1;min-height:260px;border-radius:12px;overflow:hidden;background:#1F4F31;box-shadow:var(--shadow)}
+#stage{width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+#stage text{font-family:var(--f-body);pointer-events:none}
+#stage [data-ent],#stage [data-alt],#stage [data-draw],#stage [data-h],#stage [data-sight]{cursor:pointer}
+.hud{position:absolute;left:10px;bottom:10px;right:10px;display:flex;gap:8px;align-items:flex-end;justify-content:space-between;pointer-events:none}
+.hud>*{pointer-events:auto}
+.hud-msg{background:rgba(10,20,14,.78);color:#EAF2EC;border-radius:8px;padding:5px 9px;font-size:12px;max-width:62%}
+.hud-msg:empty{display:none}
+.zoom{display:flex;gap:4px}
+.zoom button{background:rgba(10,20,14,.78);color:#fff;border:0;border-radius:7px;width:32px;height:32px;font-size:18px;cursor:pointer}
+/* timeline */
+.timeline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:7px 10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.chips{display:flex;gap:3px;flex-wrap:wrap}
+.chip{min-width:28px;height:28px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);cursor:pointer;font-family:var(--f-mono);font-size:12px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+#scrub{flex:1;min-width:120px}
+/* right */
+.switches{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
+.sw{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px}
+.sw.full{grid-column:1/-1}
+table.an{width:100%;border-collapse:collapse;font-size:12.5px}
+table.an th{font-weight:600;color:var(--muted);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:3px 4px;border-bottom:1px solid var(--line)}
+table.an td{padding:5px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+table.an td.num{font-family:var(--f-mono);text-align:right;white-space:nowrap}
+.sl{display:grid;grid-template-columns:10px minmax(0,1fr) auto auto auto;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)}
+.sl .c{width:10px;height:10px;border-radius:50%}
+.sl.sel{background:var(--accent-soft)}
+.sl .nm{cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+textarea#notes{width:100%;min-height:150px;resize:vertical;line-height:1.5}
+.qchips{display:flex;flex-wrap:wrap;gap:4px}
+.disclaimer{font-size:11.5px;color:var(--muted);border-left:3px solid var(--accent);padding:4px 8px;background:var(--panel-2);border-radius:0 6px 6px 0;line-height:1.45}
+/* modal */
+#modal{position:fixed;inset:0;background:rgba(8,14,11,.55);display:flex;align-items:center;justify-content:center;z-index:50;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-width:880px;width:100%;max-height:100%;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.mhead{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:1}
+.mhead h2{margin:0;font-family:var(--f-display);font-size:22px;text-transform:uppercase;letter-spacing:.03em;text-wrap:balance}
+.mbody{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel-2);display:flex;flex-direction:column}
+.card.cur{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.card svg{display:block;width:100%;height:auto;max-width:100%;cursor:pointer;background:#25603A}
+.card .cb{padding:8px;display:flex;flex-direction:column;gap:6px}
+.card .cb input{width:100%}
+.plrow{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.plrow .nm{flex:1;min-width:140px;font-weight:600}
+.plrow.cur .nm::after{content:" · geöffnet";color:var(--muted);font-weight:400}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:#14201A;color:#EEF4F0;padding:9px 14px;border-radius:9px;font-size:13px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:calc(100% - 32px)}
+#toast:empty{display:none}
+.mob{display:none}
+.scrim{display:none}
+@media (max-width:1180px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "center"}
+  .side{position:fixed;top:0;bottom:0;width:min(350px,90vw);z-index:40;border-radius:0;transition:transform .2s ease;
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .side.left{left:0;transform:translateX(-105%);padding-left:env(safe-area-inset-left,0px)}
+  .side.right{right:0;transform:translateX(105%);padding-right:env(safe-area-inset-right,0px)}
+  .side.open{transform:none}
+  .mob{display:inline-flex}
+  .scrim.on{display:block;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:39}
+}
+@media (max-width:640px){
+  .brand span.long{display:none}
+  .hide-s{display:none}
+  .tbtn{min-width:40px;padding:3px 4px}
+  .stage-wrap{min-height:52vh}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <button class="btn icon mob" data-act="drawer" data-side="left" aria-label="Kader und Vorlagen öffnen"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M2 8h12M2 12h12"/></svg></button>
+    <div class="brand"><svg width="26" height="26" viewBox="0 0 26 26"><rect x="3" y="3" width="2" height="21" rx="1" fill="currentColor"/><rect x="5" y="3" width="16" height="11" fill="#E0A800"/><path d="M5 3h4v3.7H5zM13 3h4v3.7h-4zM9 6.7h4v3.6H9zM17 6.7h4v3.6h-4zM5 10.3h4V14H5zM13 10.3h4V14h-4z" fill="#C8102E"/></svg>SR-Taktikboard<span class="long" style="font-weight:600;color:var(--muted)">&nbsp;· Gespann</span></div>
+    <span class="sep hide-s"></span>
+    <button class="btn" data-act="projects" title="Projekte verwalten"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4.5h4l1.3 1.5H14v7H2z"/></svg><span id="projName">Projekt</span></button>
+    <select id="sceneSel" aria-label="Szene wählen" style="max-width:240px"></select>
+    <button class="btn" data-act="newScene" title="Neue leere Szene (Grundaufstellung)">+ Szene</button>
+    <button class="btn" data-act="overview" title="Projektübersicht mit Vorschauen">Übersicht</button>
+    <span class="grow"></span>
+    <button class="btn icon" id="undoBtn" data-act="undo" title="Rückgängig (Strg+Z)" aria-label="Rückgängig"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 3L2 6l3 3"/><path d="M2 6h7a4 4 0 010 8H6"/></svg></button>
+    <button class="btn icon" id="redoBtn" data-act="redo" title="Wiederholen (Strg+Y)" aria-label="Wiederholen"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M11 3l3 3-3 3"/><path d="M14 6H7a4 4 0 000 8h3"/></svg></button>
+    <button class="btn primary" data-act="export">Export</button>
+    <button class="btn icon mob" data-act="drawer" data-side="right" aria-label="Sichtanalyse und Notizen öffnen"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg></button>
+  </header>
+
+  <aside class="side left" id="left"></aside>
+
+  <main class="center">
+    <div class="toolbar" id="toolbar"></div>
+    <div class="stage-wrap" id="stageWrap">
+      <svg id="stage" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><g id="world"></g></svg>
+      <div class="hud">
+        <div class="hud-msg" id="hudMsg"></div>
+        <div class="zoom">
+          <button data-act="zoomOut" aria-label="Verkleinern">−</button>
+          <button data-act="zoomIn" aria-label="Vergrößern">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="timeline" id="timeline"></div>
+  </main>
+
+  <aside class="side right" id="right"></aside>
+</div>
+<div class="scrim" id="scrim" data-act="closeDrawers"></div>
+<div id="modal" hidden></div>
+<div id="toast" role="status"></div>
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+'use strict';
+/* ===================== Grundlagen ===================== */
+const L = 105, W = 68;
+const AIDS = Array.from({length:11}, (_, i) => 'A' + (i + 1));
+const BIDS = Array.from({length:11}, (_, i) => 'B' + (i + 1));
+const PLAYERS = [...AIDS, ...BIDS];
+const OFFS = ['SR', 'SRA1', 'SRA2'];
+const PERSONS = [...PLAYERS, ...OFFS];
+const ENTS = [...PERSONS, 'BALL', 'EV'];
+const OFF_LABEL = {SR:'SR', SRA1:'SRA 1', SRA2:'SRA 2'};
+const STATUS_COL = {clear:'#2BD46A', blocked:'#FF3B4E', unclear:'#C9D1CC'};
+const STATUS_TXT = {clear:'frei', blocked:'mögl. verdeckt', unclear:'unklar'};
+const STAMPS = {
+  foul:{t:'F', fill:'#E63946', ink:'#fff', name:'Foul'},
+  hand:{t:'H', fill:'#F4A261', ink:'#1a1a1a', name:'Handspiel'},
+  goal:{t:'T', fill:'#ffffff', ink:'#111', name:'Tor?'},
+  card:{t:'K', fill:'#FFD60A', ink:'#111', name:'Persönliche Strafe'},
+  to:{t:'TO', fill:'#7B2CBF', ink:'#fff', name:'Teamoffizieller'},
+};
+const PALETTE = {auto:null, weiss:'#ffffff', gelb:'#FFD23F', rot:'#FF3B4E', blau:'#4CC9F0', orange:'#FF7B54', schwarz:'#111111', lila:'#B388FF'};
+
+const uid = () => Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+const clone = o => JSON.parse(JSON.stringify(o));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const r2 = n => Math.round(n * 100) / 100;
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const angTo = (a, b) => Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+const angDiff = (a, b) => ((b - a) % 360 + 540) % 360 - 180;
+const lerp = (a, b, f) => a + (b - a) * f;
+const lerpAng = (a, b, f) => a + angDiff(a, b) * f;
+const bez = (p0, c, p1, t) => { const u = 1 - t; return {x:u*u*p0.x + 2*u*t*c.x + t*t*p1.x, y:u*u*p0.y + 2*u*t*c.y + t*t*p1.y}; };
+const midp = (a, b) => ({x:(a.x + b.x) / 2, y:(a.y + b.y) / 2});
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtM = m => (Math.round(m * 10) / 10).toFixed(1).replace('.', ',') + ' m';
+const teamOf = id => (id[0] === 'A' || id[0] === 'B') && /^[AB]\d+$/.test(id) ? id[0] : null;
+const isGK = id => id === 'A1' || id === 'B1';
+function contrast(hex){
+  const h = (hex || '#000').replace('#', ''); const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return (0.299*r + 0.587*g + 0.114*b) / 255 > 0.6 ? '#111' : '#fff';
+}
+
+/* ===================== Formationen & Szenarien ===================== */
+// Slot je Rückennummer 1..11: [Rolle, y für Mannschaft A (greift nach rechts an)]
+const FORMS = {
+  '4-4-2':  [['GK',34],['D',58],['D',10],['D',42],['D',26],['M',41],['M',58],['M',27],['F',40],['F',28],['M',10]],
+  '4-3-3':  [['GK',34],['D',58],['D',10],['D',42],['D',26],['M',34],['F',56],['M',46],['F',34],['M',22],['F',12]],
+  '4-2-3-1':[['GK',34],['D',58],['D',10],['D',42],['D',26],['M',41],['AM',56],['M',27],['F',34],['AM',34],['AM',12]],
+  '3-5-2':  [['GK',34],['M',60],['M',8],['D',34],['D',48],['M',34],['D',20],['M',46],['F',40],['F',28],['M',22]],
+};
+function layoutTeam(team, form, prm, ballY){
+  const [gk, def, mid, fwd] = prm; const out = {};
+  (FORMS[form] || FORMS['4-4-2']).forEach(([role, ys], i) => {
+    const wide = role === 'D' && (ys > 50 || ys < 18);
+    let v = role === 'GK' ? gk : role === 'D' ? def + (wide ? 2 : 0) : role === 'M' ? mid : role === 'AM' ? (mid + fwd) / 2 : fwd;
+    let y0 = team === 'A' ? ys : W - ys;
+    let y = role === 'GK' ? 34 + (ballY - 34) * 0.12 : 34 + (y0 - 34) * 0.82 + (ballY - 34) * 0.28;
+    y = clamp(y, 1.2, W - 1.2);
+    out[team + (i + 1)] = {x: team === 'A' ? v : L - v, y};
+  });
+  return out;
+}
+function offLine(pos, att){
+  if (att === 'A'){ const xs = BIDS.map(k => pos[k].x).sort((a, b) => b - a); return Math.max(xs[1], pos.BALL.x, L/2); }
+  const xs = AIDS.map(k => pos[k].x).sort((a, b) => a - b); return Math.min(xs[1], pos.BALL.x, L/2);
+}
+function offsidePlayers(pos, att, line){
+  return (att === 'A' ? AIDS : BIDS).filter(k => att === 'A' ? pos[k].x > line + 0.02 : pos[k].x < line - 0.02);
+}
+function wall(ids, ball, d = 9.15, goal = [105, 34], gap = 0.72){
+  const [bx, by] = ball, ang = Math.atan2(goal[1] - by, goal[0] - bx);
+  const cx = bx + Math.cos(ang) * d, cy = by + Math.sin(ang) * d, px = -Math.sin(ang), py = Math.cos(ang);
+  const o = {}; ids.forEach((id, i) => { const k = (i - (ids.length - 1) / 2) * gap; o[id] = [r2(cx + px * k), r2(cy + py * k)]; });
+  return o;
+}
+function wallCenter(ball, d = 9.15, goal = [105, 34]){
+  const ang = Math.atan2(goal[1] - ball[1], goal[0] - ball[0]);
+  return [r2(ball[0] + Math.cos(ang) * d), r2(ball[1] + Math.sin(ang) * d)];
+}
+// Strafstoß-Grundstellung (rechtes Tor)
+const PEN = {a:[20,50,62,72], b:[3,22,34,44], ball:[94,34], set:{A9:[92.6,35.2],B1:[105,34],A2:[86,20],A4:[87,26],A5:[86,42.5],A7:[87,48],A8:[83,40],A10:[87.5,51],B2:[87,22.5],B3:[86.5,45.5],B4:[84,31],B5:[84.4,37.2],B6:[85,26.2],B7:[85.5,51.5]}, sr:[89.5,21], s1:[105.25,13.84]};
+
+const SCN = [
+ {k:'anstoss', g:'Grundlagen', n:'Anstoß / Grundaufstellung', off:'off',
+  f:[{a:[4,24,36,51.5], b:[4,24,34,42], ball:[52.5,34], set:{A9:[52.2,34.7],A10:[51,29.5]}, sr:[60,44]}],
+  s:[['SR','BALL']],
+  notes:'Grundaufstellung zum Anstoß. SRA 1 und SRA 2 auf Höhe des vorletzten Abwehrspielers. SR startet leicht versetzt in der Hälfte der nicht anstoßenden Mannschaft.'},
+ // Abseits & Angriff
+ {k:'konter', g:'Abseits und Angriff', n:'Schneller Konter', off:'A', runs:['A9','A10','A6','SR','SRA1'],
+  f:[{a:[5,22,33,44], b:[14,50,62,74], ball:[31,30], set:{A6:[31.5,31]}, sr:[44,44]},
+     {a:[9,30,46,62], b:[12,40,54,66], ball:[47,31], set:{A6:[45,32],A9:[60,26],A10:[60,40]}, sr:[50,46]},
+     {a:[12,38,56,72], b:[10,28,44,56], ball:[74,25], set:{A6:[54,34],A9:[74,25],A10:[72,40]}, sr:[66,44]}],
+  s:[['SR','BALL'],['SRA1','A9']],
+  notes:'Ballgewinn Mannschaft A, schnelles Umschalten.\n• SR: früh mitlaufen, Diagonale halten, Abstand zum Ball nicht abreißen lassen.\n• SRA 1: Sprint auf Höhe des vorletzten Abwehrspielers, Blick zur Linie.'},
+ {k:'steilpass', g:'Abseits und Angriff', n:'Steilpass hinter die Abwehr', off:'A', runs:['A9','SR','SRA1','B4','B5'],
+  f:[{a:[10,40,56,74], b:[6,22,34,46], ball:[60,40], set:{A8:[59.5,40.6],A9:[80,30]}, sr:[50,52]},
+     {a:[12,44,60,80], b:[6,17,30,42], ball:[93,28], set:{A8:[64,40],A9:[93,28],B4:[90,32],B5:[89,26]}, sr:[74,48]}],
+  ev:[80,30], s:[['SRA1','EV'],['SR','A8']],
+  notes:'Entscheidender Moment: Ballabgabe durch A 8. Ereignis = Position von A 9 bei Ballabgabe.\n• SRA 1: auf Linie bleiben, erst nach Ballabgabe mitsprinten.\n• SR: Sicht auf Passgeber und Zweikämpfe hinter dem Ball.'},
+ {k:'fluegel', g:'Abseits und Angriff', n:'Angriff über den Flügel', off:'A', runs:['A11','A3','A9','SR'], curve:['A3'],
+  f:[{a:[12,42,58,72], b:[6,20,32,44], ball:[70,6], set:{A11:[70,6.6],A3:[60,8]}, sr:[62,34]},
+     {b:[4,15,26,40], ball:[93,4], set:{A11:[92.5,4.6],A3:[74,7],A9:[88,30],A10:[84,40]}, sr:[78,34]}],
+  s:[['SR','BALL'],['SRA1','A9']],
+  notes:'Flügelangriff auf der Seite von SRA 1.\n• SR: nicht zu nah an den Flügel, Strafraumzentrum im Blick.\n• SRA 1: Abseits A 9 / A 10, zusätzlich Ball-aus-Situationen an Seiten- und Torlinie.'},
+ {k:'flanke', g:'Abseits und Angriff', n:'Flanke in den Strafraum', off:'A', runs:['A9','SR'], flight:true,
+  f:[{a:[14,48,66,82], b:[1.5,11,18,30], ball:[99,8], set:{A11:[99,8.6],A9:[93,30],A10:[91,39],A7:[88,48],B4:[95,29],B5:[94,38],B2:[97,24]}, sr:[82,44]},
+     {ball:[96.5,32], set:{A9:[96.5,32],B4:[96.8,31],A10:[94,39]}, sr:[85,45]}],
+  ev:[96.5,32], s:[['SR','EV'],['SRA1','EV']], d:[['circle',96.5,32,3,'danger']],
+  notes:'Flanke von links (aus Sicht A).\n• SR: Blick in den Strafraum, Positionierung außerhalb der Flugbahn.\n• Prüfen: verdecken Abwehrspieler die Sicht auf Kopfballduell?'},
+ {k:'querpass', g:'Abseits und Angriff', n:'Abschluss nach einem Querpass', off:'A', runs:['SR','A9','SRA1'],
+  f:[{a:[14,48,66,82], b:[1.5,11,20,32], ball:[97,52], set:{A7:[97,52.6],A10:[89,33],A9:[93,40],B4:[92,36],B5:[95,42],B3:[97,48]}, sr:[82,24]},
+     {ball:[89.5,33.5], set:{A10:[89.5,33.5],A9:[96,38]}, sr:[84,26]},
+     {ball:[105.8,36.5], set:{B1:[104.6,37.5]}, sr:[86,28], s1:[105,-1.3]}],
+  ev:[89.5,33.5], s:[['SR','EV'],['SRA1','BALL']],
+  notes:'Querpass von der Torlinie zurück, Abschluss aus zentraler Position.\n• SRA 1: beim Querpass Abseits prüfen (Ball rückwärts gespielt), dann Torlinie.\n• SR: Sicht auf Abschluss und mögliche Blockaktionen.'},
+ {k:'waitsee', g:'Abseits und Angriff', n:'Abseitsmoment mit Wait-and-See', off:'A', runs:['A10','A9','SR','SRA1'],
+  f:[{a:[12,44,62,78], b:[5,23,34,46], ball:[63,34], set:{A8:[62.5,34.6],A9:[86,28],A10:[80,41]}, sr:[56,48]},
+     {b:[5,17,30,42], ball:[92,38], set:{A10:[92,38],A9:[89,28]}, sr:[74,46]}],
+  ev:[86,28], s:[['SRA1','A9'],['SRA1','A10']], d:[['text',80,21,'A 9 im Abseits – Eingreifen abwarten']],
+  notes:'A 9 steht in Abseitsposition, A 10 nicht. Der Ball geht zu A 10.\n• SRA 1: Fahne unten lassen, solange A 9 nicht eingreift (Wait and See).\n• Absprache SR–SRA: Signal erst bei aktivem Eingreifen.'},
+ {k:'engabseits', g:'Abseits und Angriff', n:'Enge Abseitsentscheidung', off:'A', runs:['A9','SR','SRA1'],
+  f:[{a:[12,46,62,76], b:[5,25,36,48], ball:[63,38], set:{A8:[62.5,38.6],A9:[80.35,30]}, sr:[56,50]},
+     {ball:[95,30], set:{A9:[95,30],B4:[92,33],B5:[90,40]}, sr:[78,48]}],
+  ev:[80.35,30], s:[['SRA1','EV']], d:[['rect',77,24,7,12,'area']],
+  notes:'A 9 steht bei Ballabgabe ca. 35 cm vor der Abseitslinie.\n• SRA 1: exakt auf Höhe des vorletzten Abwehrspielers, Blick senkrecht zur Linie.\n• Verdeckung durch Abwehrspieler zwischen SRA 1 und A 9 prüfen.'},
+ // Strafraum
+ {k:'zweikampf', g:'Strafraum und Torentscheidung', n:'Zweikampf im Strafraum', off:'off', runs:['A9','B5','SR'],
+  f:[{a:[14,46,64,84], b:[1.5,11,22,34], ball:[90,44], set:{A9:[90,44.5],B5:[91,42.6]}, sr:[76,52]},
+     {ball:[93.5,40.5], set:{A9:[93,40],B5:[93.8,40.9],B4:[95,35],A10:[95,30]}, sr:[80,54]}],
+  ev:[93.4,40.4], s:[['SR','EV'],['SRA1','EV']], d:[['circle',93.4,40.4,2.5,'danger']],
+  notes:'Zweikampf A 9 gegen B 5 im Strafraum.\n• SR: seitlicher Blickwinkel auf den Kontaktpunkt, nicht hinter den Spielern.\n• SRA 1: Unterstützung bei Kontakt auf der abgewandten Seite.'},
+ {k:'hand', g:'Strafraum und Torentscheidung', n:'Handspielverdacht', off:'off', flight:true,
+  f:[{a:[14,46,64,82], b:[1.5,11,20,32], ball:[98,7], set:{A11:[98,7.6],B4:[92,28.5],B6:[86,37],A10:[88,36],A9:[94,32]}, sr:[80,46]},
+     {ball:[92.3,28.8], sr:[81,46]}],
+  ev:[92,28.5], s:[['SR','EV'],['SRA1','EV']], d:[['stamp','hand',92.2,25.8]],
+  notes:'Flanke trifft B 4 im Strafraum, möglicher Armkontakt.\n• Prüfen: Sichtlinie SR → Ereignis durch B 6 / A 10 verdeckt?\n• SRA 1 hat freie Sicht – Absprache über Headset.'},
+ {k:'foulgrenze', g:'Strafraum und Torentscheidung', n:'Foulspiel nahe der Strafraumgrenze', off:'A', runs:['A10','SR'],
+  f:[{a:[12,44,62,80], b:[2,14,26,38], ball:[84,20], set:{A10:[84,20.6],B5:[86,23]}, sr:[70,40]},
+     {ball:[88.4,22], set:{A10:[88.3,22],B5:[88.9,22.6]}, sr:[74,42]}],
+  ev:[88.5,22.2], s:[['SR','EV'],['SRA1','EV']], d:[['stamp','foul',88.5,19.6],['text',76,15.5,'Innerhalb oder außerhalb des Strafraums?']],
+  notes:'Foul direkt an der Strafraumlinie.\n• SRA 1 unterstützt bei der Frage innen/außen, wenn er auf Höhe ist.\n• SR: Kontaktpunkt und Position zur 16-m-Linie beurteilen.'},
+ {k:'torwart', g:'Strafraum und Torentscheidung', n:'Torwart gegen Angreifer', off:'off', runs:['A9','B1','SR'],
+  f:[{a:[14,46,64,84], b:[3,14,26,38], ball:[88,28], set:{A9:[88,28.6],B1:[102.5,33],B4:[92,36]}, sr:[74,44]},
+     {ball:[99.6,31], set:{A9:[99,30.6],B1:[100.4,31.8]}, sr:[86,46]}],
+  ev:[99.8,31.3], s:[['SR','EV'],['SRA1','EV']],
+  notes:'Torwart kommt heraus, Duell mit A 9.\n• SR: Blick auf Kontakt Torwart–Angreifer, möglichst seitlich.\n• SRA 1: Torlinie und mögliches Abseits beim Zuspiel.'},
+ {k:'torlinie', g:'Strafraum und Torentscheidung', n:'Ball nahe der Torlinie', off:'off', runs:['SR','SRA1'],
+  f:[{a:[16,48,68,86], b:[1.5,8,18,30], ball:[100,36], set:{A9:[99,36.6],B1:[103,34]}, sr:[86,48], s1:[100,-1.3]},
+     {ball:[104.85,35.4], set:{B1:[104.3,34.2],A9:[101,36]}, sr:[90,48], s1:[105,-1.3]}],
+  ev:[105,35.4], s:[['SRA1','BALL'],['SR','BALL']], d:[['rect',103.6,30.34,2.4,7.32,'goal'],['text',96,26,'Ball vollständig über der Linie?']],
+  notes:'Torwart hält den Ball nahe der Torlinie.\n• SRA 1: Position auf Höhe der Torlinie, Sicht entlang der Linie.\n• Sichtlinie SRA 1 → Ball kann durch Torwart / Pfosten beeinträchtigt sein.'},
+ {k:'treffer', g:'Strafraum und Torentscheidung', n:'Möglicher Treffer', off:'off', runs:['SR','SRA1'],
+  f:[{a:[16,48,66,84], b:[1.5,10,20,32], ball:[88,40], set:{A10:[87.6,40.6],B5:[92,38],B4:[94,30]}, sr:[78,50]},
+     {ball:[105.7,33], set:{B1:[104.8,33.8]}, sr:[86,50], s1:[105,-1.3]}],
+  ev:[105.4,33], s:[['SRA1','BALL'],['SR','BALL']], d:[['stamp','goal',101,30]],
+  notes:'Schuss aus 17 m, Torwart wehrt auf der Linie ab.\n• SRA 1: Sprint zur Torlinie, Signal bei Tor/kein Tor.\n• SR: Bestätigung über Headset abwarten.'},
+ {k:'elfnach', g:'Strafraum und Torentscheidung', n:'Strafstoß und möglicher Nachschuss', off:'off', runs:['A10','SR','SRA1'],
+  f:[PEN,
+     {ball:[104.2,30.2], set:{B1:[104.4,31],A9:[93,35]}, sr:[89.5,21], s1:[105.25,13.84]},
+     {ball:[95,40], set:{A10:[95.2,40.6],A7:[92,45],B3:[93,44]}, sr:[90,24], s1:[100,-1.3]}],
+  ev:[95,40], s:[['SR','A9'],['SRA1','B1']], d:[['circle',94,34,9.15,'area']],
+  notes:'Strafstoß, Torwart pariert, Nachschuss aus dem Rückraum.\n• SRA 1: Torwart auf der Linie? Ball über der Linie?\n• SR: Eindringen in den Strafraum / Teilkreis vor der Ausführung beobachten.'},
+ // Standards
+ {k:'eckeR', g:'Standardsituationen', n:'Eckstoß rechts (Seite SRA 1)', off:'off', flight:true, runs:['A9'],
+  f:[{a:[30,60,70,80], b:[2,40,60,70], ball:[104.6,0.6], set:{A11:[103.6,-0.8],B1:[104,33.5],B2:[104.5,30],B4:[100,30],B5:[99.5,36],B3:[101,40],B6:[96,33],B8:[98,26],B10:[95,40],A9:[99,32],A10:[97,37],A4:[100,28],A5:[96,30],A7:[94,44]}, sr:[92,46], s1:[106.6,0.3]},
+     {ball:[99.5,33], set:{A9:[99.6,32.4],B5:[99.8,34]}, sr:[92,44], s1:[106.6,0.3]}],
+  ev:[99.5,33], s:[['SR','EV'],['SRA1','BALL']],
+  notes:'Eckstoß auf der Seite von SRA 1.\n• SRA 1: hinter der Eckfahne, Ball im Spiel / Ball aus über die Torlinie.\n• SR: Position mit Blick auf Laufwege und Halten im Strafraum.'},
+ {k:'eckeL', g:'Standardsituationen', n:'Eckstoß links (Gegenseite)', off:'off', flight:true, runs:['A9'],
+  f:[{a:[30,60,70,80], b:[2,40,60,70], ball:[104.6,67.4], set:{A7:[103.6,68.8],B1:[104,34.5],B2:[104.5,38],B4:[100,38],B5:[99.5,32],B3:[101,28],B6:[96,35],B8:[98,42],B10:[95,28],A9:[99,36],A10:[97,31],A4:[100,40],A5:[96,38],A11:[94,24]}, sr:[92,22], s1:[105.25,13.84]},
+     {ball:[99.5,35], set:{A9:[99.6,35.6],B5:[99.8,34]}, sr:[92,24], s1:[105.25,13.84]}],
+  ev:[99.5,35], s:[['SR','EV'],['SRA1','EV']],
+  notes:'Eckstoß von der gegenüberliegenden Seite.\n• SRA 1: Position auf der Torlinie am Strafraum, Blick auf Torlinie.\n• SR: Seite und Abstand so wählen, dass der Torraum frei einsehbar ist.'},
+ {k:'fsdirekt', g:'Standardsituationen', n:'Direkter Freistoß', off:'A', flight:true,
+  f:[{a:[16,46,64,84], b:[1.5,12,22,34], ball:[80,40], set:{...wall(['B6','B8','B10','B7'],[80,40]),A10:[78.8,41]}, sr:[86,50]},
+     {ball:[105.5,31], sr:[88,50]}],
+  s:[['SR','BALL'],['SRA1','BALL']], d:[['circle',80,40,9.15,'area'],['measure','BALL',wallCenter([80,40])]],
+  notes:'Direkter Freistoß aus ca. 25 m.\n• SR: Mauer auf 9,15 m stellen, dann Position mit Sicht auf Mauer und Tor.\n• SRA 1: Abseitslinie, danach Torlinie.'},
+ {k:'fsindirekt', g:'Standardsituationen', n:'Indirekter Freistoß', off:'off',
+  f:[{a:[16,48,66,86], b:[0.5,10,20,30], ball:[97,26], set:{B1:[104.6,34],B2:[104.8,31],B3:[104.8,32.5],B4:[104.8,35.5],B5:[104.8,37],A9:[96,27.4],A10:[96.4,24.4]}, sr:[90,40]}],
+  s:[['SR','BALL'],['SRA1','BALL']], d:[['text',90,47,'SR: Arm hoch bis zur zweiten Ballberührung']],
+  notes:'Indirekter Freistoß im Strafraum, Mauer auf der Torlinie.\n• SR: Arm deutlich heben, bis ein zweiter Spieler den Ball berührt.\n• SRA 1: Torlinie und Abstand der Mauer.'},
+ {k:'mauer', g:'Standardsituationen', n:'Mauerstellung mit 9,15 m', off:'off', runs:['SR'],
+  f:[{a:[16,46,64,82], b:[1.5,12,22,34], ball:[77,24], set:{...wall(['B3','B4','B5','B6','B8'],[77,24],7),A8:[76,23.4]}, sr:[79,26]},
+     {set:{...wall(['B3','B4','B5','B6','B8'],[77,24])}, sr:[83,31]}],
+  s:[['SR','B5']], d:[['circle',77,24,9.15,'area'],['measure','BALL',wallCenter([77,24])]],
+  notes:'Schritt 1: Mauer steht nur ca. 7 m entfernt.\nSchritt 2: Mauer auf 9,15 m.\n• SR: Abstand herstellen, danach Position wählen, die Mauer und Tor sichtbar hält.'},
+ {k:'fsgrenze', g:'Standardsituationen', n:'Freistoß nahe der Strafraumgrenze', off:'A', flight:true,
+  f:[{a:[16,46,64,84], b:[1.5,12,22,34], ball:[87.2,30], set:{...wall(['B4','B5','B6'],[87.2,30]),A10:[86,31]}, sr:[90,44]},
+     {ball:[105.4,36.5], sr:[90,44]}],
+  s:[['SR','BALL'],['SRA1','BALL']], d:[['circle',87.2,30,9.15,'area'],['text',80,22,'Tatort außerhalb – Mauer im Strafraum']],
+  notes:'Freistoß 1,3 m vor der Strafraumlinie.\n• SR: Ort des Vergehens dokumentieren, Mauerabstand prüfen.\n• SRA 1: Abseitslinie, danach Torlinie.'},
+ {k:'einwurf', g:'Standardsituationen', n:'Einwurf in Tornähe', off:'off', flight:true,
+  f:[{a:[16,46,62,80], b:[2,12,22,34], ball:[94,-0.4], set:{A3:[94,-1],A9:[99,20],A10:[96,26],A11:[92,12],B4:[99,22],B5:[97,28],B2:[95,10]}, sr:[86,30], s1:[96.5,-1.4]},
+     {ball:[99,20], sr:[87,30], s1:[98,-1.4]}],
+  s:[['SR','A9'],['SRA1','BALL']],
+  notes:'Weiter Einwurf in den Strafraum.\n• SRA 1: Wurftechnik und Ort, dann Abseitslinie (beim Einwurf kein Abseits).\n• SR: Halten und Stoßen im Strafraum beobachten.'},
+ {k:'strafstoss', g:'Standardsituationen', n:'Strafstoß mit Positionierung des Gespanns', off:'off',
+  f:[PEN],
+  s:[['SR','A9'],['SRA1','B1']], d:[['circle',94,34,9.15,'area'],['text',99,12,'SRA 1: Torlinie / Strafraumlinie']],
+  notes:'Positionierung beim Strafstoß.\n• SR: seitlich zwischen Strafstoßmarke und Strafraumlinie, Blick auf Schütze und Teilkreis.\n• SRA 1: am Schnittpunkt Torlinie / Strafraumlinie – Torwart und Torlinie.\n• SRA 2: Höhe Mittellinie, Konterabsicherung.'},
+ // Konflikte
+ {k:'rudel', g:'Konflikt- und Disziplinarsituationen', n:'Rudelbildung nach einem Foul', off:'off', runs:['SR','A6','A9','A10','B6','B4','B10'],
+  f:[{a:[10,40,54,66], b:[10,44,54,62], ball:[60,30], set:{A7:[60,30.6],B8:[60.9,29.6]}, sr:[52,42], s1:[60,-1.3]},
+     {set:{A6:[61.5,31.5],A9:[58.6,28.5],A10:[62,28],B6:[59,32],B4:[61,27],B10:[63,30.6],A8:[57.6,31]}, sr:[57,35.5], s1:[60,-1.3], s2:[56,69.3]}],
+  ev:[60,30], s:[['SR','EV'],['SRA1','EV']], d:[['circle',60,30,5,'danger'],['stamp','foul',60,25.4]],
+  notes:'Rudelbildung nach Foul B 8 an A 7.\n• SR: zügig hin, Hauptakteure trennen, Überblick behalten.\n• SRA 1: von außen beobachten, Rückennummern notieren.\n• SRA 2: Position halten, Umfeld im Blick.'},
+ {k:'streit', g:'Konflikt- und Disziplinarsituationen', n:'Streit zwischen zwei Spielern', off:'off',
+  f:[{a:[8,36,58,74], b:[6,28,42,60], ball:[76,18], set:{A10:[76,18.6],A4:[38,46],B9:[39.1,46.7]}, sr:[66,30]}],
+  ev:[38.5,46.4], s:[['SR','EV'],['SRA2','EV']], d:[['stamp','card',38.5,43]],
+  notes:'Streit hinter dem Spielgeschehen.\n• SR ist beim Ball – Sicht auf den Vorfall weit entfernt.\n• SRA 2 hat die nähere und freie Sicht: Meldung über Headset.'},
+ {k:'strafeSp', g:'Konflikt- und Disziplinarsituationen', n:'Persönliche Strafe gegen einen Spieler', off:'off',
+  f:[{a:[10,36,46,58], b:[10,36,46,56], ball:[52,34], set:{B6:[51.6,30.2]}, sr:[50,30]}],
+  ev:[51.6,30.2], s:[['SRA1','SR'],['SRA2','SR']], d:[['stamp','card',53.5,28]],
+  notes:'Persönliche Strafe gegen B 6.\n• SR: Spieler isolieren, Rücken zu ruhigem Bereich, Ruhe ausstrahlen.\n• SRA 1 / SRA 2: Umfeld beobachten, Nummer notieren.'},
+ {k:'strafeTO', g:'Konflikt- und Disziplinarsituationen', n:'Persönliche Strafe gegen einen Teamoffiziellen', off:'off', runs:['SR'],
+  f:[{a:[10,38,52,64], b:[10,38,52,64], ball:[70,40], sr:[64,20]},
+     {sr:[58,1.6], s1:[64,-1.3]}],
+  ev:[60,-3.5], s:[['SR','EV'],['SRA1','EV']], d:[['rect',38,-5.8,12,4.4,'area'],['rect',55,-5.8,12,4.4,'area'],['stamp','to',60,-3.5],['text',44,-6.6,'Technische Zone Heim'],['text',61,-6.6,'Technische Zone Gast']],
+  notes:'Fehlverhalten in der technischen Zone.\n• SR: ruhig zur Zone, klare Kommunikation, Karte zeigen.\n• SRA 1: unterstützt mit Beobachtung, Spielfeld im Blick.'},
+ {k:'gegenseite', g:'Konflikt- und Disziplinarsituationen', n:'Unsportliches Verhalten auf der Gegenseite', off:'off',
+  f:[{a:[10,40,60,76], b:[6,24,40,58], ball:[78,10], set:{A11:[78,10.6],A4:[30,58],B9:[31,58.8]}, sr:[66,26]}],
+  ev:[30.5,58.4], s:[['SR','EV'],['SRA2','EV']],
+  notes:'Vorfall weit entfernt vom Ball auf der Seite von SRA 2.\n• SRA 2: einziges Teammitglied mit naher Sicht – Signal / Headset.\n• SR: Sichtlinie über das ganze Feld, mögliche Verdeckungen.'},
+];
+
+function autoSR(ball, att){ return att === 'B' ? [clamp(ball.x + 12, 6, 99), clamp(ball.y - 12, 3, 65)] : [clamp(ball.x - 12, 6, 99), clamp(ball.y + 12, 3, 65)]; }
+
+function framesFromDef(def){
+  const frames = []; let st = {a:[5,30,45,60], b:[5,30,45,60], fa:'4-4-2', fb:'4-3-3', ball:[52.5,34], set:{}};
+  def.f.forEach(f => {
+    st = {...st, ...f, set:{...st.set, ...(f.set || {})}};
+    const by = st.ball[1];
+    const pos = {...layoutTeam('A', st.fa, st.a, by), ...layoutTeam('B', st.fb, st.b, by)};
+    Object.entries(st.set).forEach(([k, v]) => { pos[k] = {x:v[0], y:v[1]}; });
+    pos.BALL = {x:st.ball[0], y:st.ball[1]};
+    const sr = f.sr || autoSR(pos.BALL, 'A'); pos.SR = {x:sr[0], y:sr[1]};
+    pos.SRA1 = f.s1 ? {x:f.s1[0], y:f.s1[1]} : {x:clamp(offLine(pos, 'A'), L/2, L), y:-1.3};
+    pos.SRA2 = f.s2 ? {x:f.s2[0], y:f.s2[1]} : {x:clamp(offLine(pos, 'B'), 0, L/2), y:W + 1.3};
+    pos.EV = def.ev ? {x:def.ev[0], y:def.ev[1]} : {x:L/2, y:W/2};
+    OFFS.forEach(o => { pos[o].d = r2(angTo(pos[o], pos.BALL)); });
+    ENTS.forEach(k => { pos[k].x = r2(pos[k].x); pos[k].y = r2(pos[k].y); });
+    frames.push(pos);
+  });
+  return frames;
+}
+
+function defaultOffi(){ return {SR:{fov:110, range:35, track:true}, SRA1:{fov:110, range:45, track:true}, SRA2:{fov:110, range:45, track:true}}; }
+
+function makeScene(name, frames, extra = {}){
+  return Object.assign({id:uid(), name, notes:'', frames, origin:clone(frames[0]), drawings:[], sights:[], alts:[], hasEv:false,
+    offside:'off', offi:defaultOffi(), locked:{}, at:0, tmpl:null}, extra);
+}
+function sceneFromTemplate(key){
+  const def = SCN.find(s => s.k === key) || SCN[0];
+  const frames = framesFromDef(def);
+  const sc = makeScene(def.n, frames, {notes:def.notes || '', hasEv:!!def.ev, offside:def.off || 'off', tmpl:def.k});
+  // automatische Laufwege
+  for (let i = 0; i < frames.length - 1; i++){
+    (def.runs || []).forEach(id => {
+      const a = frames[i][id], b = frames[i + 1][id]; if (dist(a, b) < 1) return;
+      const curve = (def.curve || []).includes(id);
+      const c = curve ? curveCtrl(a, b, 0.22) : midp(a, b);
+      sc.drawings.push({id:uid(), t:'arrow', kind:'run', dash:false, curve, p0:{x:a.x, y:a.y}, p1:{x:b.x, y:b.y}, c, color:null, owner:id, step:i});
+    });
+    const a = frames[i].BALL, b = frames[i + 1].BALL;
+    if (dist(a, b) >= 1){
+      sc.drawings.push({id:uid(), t:'arrow', kind:def.flight ? 'flight' : 'pass', dash:false, curve:!!def.flight, p0:{...a}, p1:{...b}, c:def.flight ? curveCtrl(a, b, 0.15) : midp(a, b), color:null, owner:'BALL', step:i});
+    }
+  }
+  (def.d || []).forEach(d => {
+    if (d[0] === 'circle') sc.drawings.push({id:uid(), t:'zone', shape:'circle', kind:d[4], cx:d[1], cy:d[2], r:d[3], color:null});
+    if (d[0] === 'rect') sc.drawings.push({id:uid(), t:'zone', shape:'rect', kind:d[5], x:d[1], y:d[2], w:d[3], h:d[4], color:null});
+    if (d[0] === 'stamp') sc.drawings.push({id:uid(), t:'stamp', kind:d[1], x:d[2], y:d[3]});
+    if (d[0] === 'text') sc.drawings.push({id:uid(), t:'text', x:d[1], y:d[2], text:d[3], color:null, size:1.6});
+    if (d[0] === 'measure'){
+      const pt = v => typeof v === 'string' ? {x:frames[0][v].x, y:frames[0][v].y, ref:v} : {x:v[0], y:v[1]};
+      sc.drawings.push({id:uid(), t:'measure', a:pt(d[1]), b:pt(d[2])});
+    }
+  });
+  (def.s || []).forEach(([from, to]) => sc.sights.push({id:uid(), from, to, on:true}));
+  return sc;
+}
+function curveCtrl(a, b, k){
+  const m = midp(a, b), dx = b.x - a.x, dy = b.y - a.y; return {x:m.x - dy * k, y:m.y + dx * k};
+}
+function defaultTeams(){
+  const nums = () => Array.from({length:11}, (_, i) => ({num:i + 1, name:''}));
+  return {A:{name:'Heim', color:'#D62839', gk:'#A3E635', form:'4-4-2', players:nums()},
+          B:{name:'Gast', color:'#1F5FD1', gk:'#FF9F1C', form:'4-3-3', players:nums()}};
+}
+function defaultOfficials(){ return {SR:{color:'#15181A', sight:'#FFD23F'}, SRA1:{color:'#15181A', sight:'#FF7B54'}, SRA2:{color:'#15181A', sight:'#4CC9F0'}}; }
+function newProject(name, withExamples){
+  const p = {v:1, id:uid(), name, created:Date.now(), updated:Date.now(), teams:defaultTeams(), officials:defaultOfficials(), scenes:[], cur:0};
+  const keys = withExamples ? ['anstoss','steilpass','waitsee','zweikampf','hand','eckeR','strafstoss'] : ['anstoss'];
+  p.scenes = keys.map(sceneFromTemplate);
+  return p;
+}
+
+/* ===================== Positionen, Analyse ===================== */
+function arrowFor(sc, id, step){ return sc.drawings.find(d => d.t === 'arrow' && d.owner === id && d.step === step); }
+function posAt(sc, t){
+  const n = sc.frames.length; t = clamp(t, 0, n - 1);
+  const i = Math.floor(t + 1e-9), f = t - i; const A = sc.frames[i]; const out = {};
+  if (f < 1e-6 || i >= n - 1){ ENTS.forEach(k => { out[k] = {...A[k]}; }); }
+  else {
+    const B = sc.frames[i + 1];
+    ENTS.forEach(k => {
+      const a = A[k], b = B[k] || a; let p;
+      const arr = arrowFor(sc, k, i);
+      if (arr){
+        const c = arr.curve ? arr.c : midp(arr.p0, arr.p1); const q = bez(arr.p0, c, arr.p1, f);
+        p = {x:q.x + (1 - f) * (a.x - arr.p0.x) + f * (b.x - arr.p1.x), y:q.y + (1 - f) * (a.y - arr.p0.y) + f * (b.y - arr.p1.y)};
+      } else p = {x:lerp(a.x, b.x, f), y:lerp(a.y, b.y, f)};
+      p.d = lerpAng(a.d || 0, b.d || 0, f); out[k] = p;
+    });
+  }
+  OFFS.forEach(o => { if (sc.offi[o].track && dist(out[o], out.BALL) > 0.2) out[o].d = angTo(out[o], out.BALL); });
+  (sc.alts || []).forEach(a => { out['ALT:' + a.id] = {x:a.x, y:a.y, d:out.BALL ? angTo(a, out.BALL) : 0}; });
+  return out;
+}
+function sightCheck(pos, src, tgt, exclude, width){
+  const r = width / 2, m = 0.45; const dx = tgt.x - src.x, dy = tgt.y - src.y, len = Math.hypot(dx, dy);
+  const res = {status:'clear', blockers:[], unclear:[], len};
+  if (len < 0.5) return res;
+  PERSONS.forEach(k => {
+    if (exclude.includes(k)) return; const p = pos[k]; if (!p) return;
+    const along = ((p.x - src.x) * dx + (p.y - src.y) * dy) / len;
+    if (along < r + 0.35 || along > len - (r + 0.35)) return;
+    const d = Math.abs((p.x - src.x) * dy - (p.y - src.y) * dx) / len;
+    if (d < r) res.blockers.push(k); else if (d < r + m) res.unclear.push(k);
+  });
+  res.status = res.blockers.length ? 'blocked' : res.unclear.length ? 'unclear' : 'clear';
+  return res;
+}
+function pathLen(sc, id, t){
+  let s = 0; const end = Math.min(Math.floor(t + 1e-9), sc.frames.length - 1);
+  for (let i = 0; i < end; i++){
+    const arr = arrowFor(sc, id, i); const a = sc.frames[i][id], b = sc.frames[i + 1][id];
+    if (arr && arr.curve){ let prev = a; for (let k = 1; k <= 12; k++){ const q = posAt(sc, i + k / 12)[id]; s += dist(prev, q); prev = q; } }
+    else s += dist(a, b);
+  }
+  const f = t - end; if (f > 1e-6 && end < sc.frames.length - 1) s += dist(sc.frames[end][id], posAt(sc, t)[id]);
+  return s;
+}
+
+/* ===================== SVG-Aufbau ===================== */
+let ROT = false; // Hochformat: Texte gegendrehen
+function T(x, y, s, attr = ''){
+  const r = ROT ? ` transform="rotate(-90 ${r2(x)} ${r2(y)})"` : '';
+  return `<text x="${r2(x)}" y="${r2(y)}" text-anchor="middle" dominant-baseline="central"${r}${attr ? ' ' + attr : ''}>${esc(s)}</text>`;
+}
+function pillText(x, y, s, fs, bg, fg){
+  const w = Math.max(2, String(s).length * fs * 0.56 + fs * 0.9), h = fs * 1.5;
+  const rw = ROT ? h : w, rh = ROT ? w : h;
+  return `<rect x="${r2(x - rw/2)}" y="${r2(y - rh/2)}" width="${r2(rw)}" height="${r2(rh)}" rx="${r2(Math.min(rw, rh)/2)}" fill="${bg}" opacity=".9"/>` +
+    T(x, y, s, `font-size="${fs}" font-weight="600" fill="${fg}"`);
+}
+let PITCH_CACHE = null;
+function pitchSVG(){
+  if (PITCH_CACHE) return PITCH_CACHE;
+  let s = `<rect x="-12" y="-12" width="129" height="92" fill="#25603A"/>`;
+  for (let i = 0; i < 10; i++) s += `<rect x="${i * 10.5}" y="-3" width="10.5" height="74" fill="${i % 2 ? '#2E7A47' : '#2B7343'}"/>`;
+  s += `<g fill="none" stroke="#F3F7F1" stroke-width=".16" stroke-linejoin="round">
+<rect x="0" y="0" width="105" height="68"/><line x1="52.5" y1="0" x2="52.5" y2="68"/><circle cx="52.5" cy="34" r="9.15"/>
+<rect x="0" y="13.84" width="16.5" height="40.32"/><rect x="0" y="24.84" width="5.5" height="18.32"/>
+<rect x="88.5" y="13.84" width="16.5" height="40.32"/><rect x="99.5" y="24.84" width="5.5" height="18.32"/>
+<path d="M16.5 26.68A9.15 9.15 0 0 1 16.5 41.32"/><path d="M88.5 26.68A9.15 9.15 0 0 0 88.5 41.32"/>
+<path d="M1 0A1 1 0 0 1 0 1"/><path d="M104 0A1 1 0 0 0 105 1"/><path d="M0 67A1 1 0 0 1 1 68"/><path d="M105 67A1 1 0 0 0 104 68"/>
+<rect x="-2" y="30.34" width="2" height="7.32" fill="rgba(255,255,255,.16)"/><rect x="105" y="30.34" width="2" height="7.32" fill="rgba(255,255,255,.16)"/></g>
+<g fill="#F3F7F1"><circle cx="11" cy="34" r=".22"/><circle cx="94" cy="34" r=".22"/><circle cx="52.5" cy="34" r=".22"/></g>`;
+  PITCH_CACHE = s; return s;
+}
+function gridSVG(){
+  let s = '<g stroke="#ffffff" stroke-opacity=".16" stroke-width=".07">';
+  for (let x = 5; x < L; x += 5) s += `<line x1="${x}" y1="0" x2="${x}" y2="${W}"/>`;
+  for (let y = 5; y < W; y += 5) s += `<line x1="0" y1="${y}" x2="${L}" y2="${y}"/>`;
+  return s + '</g>';
+}
+function sightColor(proj, from){ if (from && from.startsWith('ALT:')) return proj.officials.SR.sight; return (proj.officials[from] || proj.officials.SR).sight; }
+function ownerColor(proj, owner){
+  if (!owner) return null; if (owner === 'BALL') return '#ffffff';
+  if (OFFS.includes(owner)) return proj.officials[owner].sight;
+  const t = teamOf(owner); if (t) return proj.teams[t].color; return null;
+}
+function arrowColor(proj, d){
+  if (d.color) return d.color;
+  if (d.kind === 'pass' || d.kind === 'flight') return '#ffffff';
+  return ownerColor(proj, d.owner) || (d.kind === 'look' ? '#FFD23F' : '#FFE066');
+}
+function arrowPath(d){
+  if (d.curve) return `M${r2(d.p0.x)} ${r2(d.p0.y)}Q${r2(d.c.x)} ${r2(d.c.y)} ${r2(d.p1.x)} ${r2(d.p1.y)}`;
+  return `M${r2(d.p0.x)} ${r2(d.p0.y)}L${r2(d.p1.x)} ${r2(d.p1.y)}`;
+}
+function arrowHead(d, col, size){
+  const from = d.curve ? d.c : d.p0; const a = Math.atan2(d.p1.y - from.y, d.p1.x - from.x);
+  const p = d.p1, s = size; const l = {x:p.x - Math.cos(a - 0.45) * s, y:p.y - Math.sin(a - 0.45) * s}, r = {x:p.x - Math.cos(a + 0.45) * s, y:p.y - Math.sin(a + 0.45) * s};
+  return `<path d="M${r2(p.x)} ${r2(p.y)}L${r2(l.x)} ${r2(l.y)}L${r2(r.x)} ${r2(r.y)}Z" fill="${col}"/>`;
+}
+function drawingSVG(d, o){
+  const proj = o.proj; const id = d.id; const hit = o.interactive ? ` data-draw="${id}"` : '';
+  const selected = o.sel && o.sel.k === 'draw' && o.sel.id === id;
+  let s = '';
+  if (d.t === 'arrow'){
+    const col = arrowColor(proj, d); const w = d.kind === 'run' ? 0.34 : d.kind === 'look' ? 0.2 : 0.24;
+    const dash = d.kind === 'flight' ? ' stroke-dasharray=".12 .62" stroke-linecap="round"' : (d.dash || d.kind === 'look') ? ' stroke-dasharray="1.1 .7"' : '';
+    const path = arrowPath(d);
+    s += `<g${hit} opacity="${o.dimStep && d.step !== undefined && d.step !== o.dimStep ? .55 : 1}">`;
+    if (o.interactive) s += `<path d="${path}" fill="none" stroke="transparent" stroke-width="2.2"/>`;
+    s += `<path d="${path}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="${w + 0.22}"${d.kind === 'flight' ? ' stroke-dasharray=".12 .62" stroke-linecap="round"' : ''}/>`;
+    s += `<path d="${path}" fill="none" stroke="${col}" stroke-width="${w}"${dash}/>` + arrowHead(d, col, d.kind === 'run' ? 1.35 : 1.1);
+    if (d.kind === 'look') s += `<circle cx="${r2(d.p0.x)}" cy="${r2(d.p0.y)}" r=".45" fill="none" stroke="${col}" stroke-width=".18"/>`;
+    s += '</g>';
+  } else if (d.t === 'free'){
+    const col = d.color || '#FFE066'; const p = d.pts.map((q, i) => (i ? 'L' : 'M') + r2(q[0]) + ' ' + r2(q[1])).join('');
+    s += `<g${hit}>` + (o.interactive ? `<path d="${p}" fill="none" stroke="transparent" stroke-width="2"/>` : '') + `<path d="${p}" fill="none" stroke="${col}" stroke-width=".3" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  } else if (d.t === 'text'){
+    const col = d.color || '#ffffff'; const fs = d.size || 1.6;
+    s += `<g${hit}>` + (o.interactive ? `<rect x="${r2(d.x - String(d.text).length * fs * .3 - .5)}" y="${r2(d.y - fs)}" width="${r2(String(d.text).length * fs * .6 + 1)}" height="${r2(fs * 2)}" fill="transparent"${ROT ? ` transform="rotate(-90 ${r2(d.x)} ${r2(d.y)})"` : ''}/>` : '') +
+      T(d.x, d.y, d.text, `font-size="${fs}" font-weight="600" fill="${col}" stroke="rgba(0,0,0,.55)" stroke-width="${r2(fs * .22)}" paint-order="stroke" stroke-linejoin="round"`) + '</g>';
+  } else if (d.t === 'zone'){
+    const k = d.kind || 'area'; const col = d.color || (k === 'danger' ? '#FF3B4E' : k === 'goal' ? '#FFD23F' : '#ffffff');
+    const op = k === 'area' ? .1 : .18;
+    const attr = `fill="${col}" fill-opacity="${op}" stroke="${col}" stroke-opacity=".85" stroke-width=".16" stroke-dasharray="${k === 'danger' ? '0.6 0.35' : '1 .5'}"`;
+    s += `<g${hit}>` + (d.shape === 'circle' ? `<circle cx="${r2(d.cx)}" cy="${r2(d.cy)}" r="${r2(d.r)}" ${attr}/>` : `<rect x="${r2(d.x)}" y="${r2(d.y)}" width="${r2(d.w)}" height="${r2(d.h)}" ${attr}/>`) + '</g>';
+  } else if (d.t === 'stamp'){
+    const st = STAMPS[d.kind] || STAMPS.foul; const r = 1.25;
+    s += `<g${hit}><circle cx="${r2(d.x)}" cy="${r2(d.y)}" r="${r}" fill="${st.fill}" stroke="#111" stroke-width=".16"/>` + T(d.x, d.y, st.t, `font-size="${st.t.length > 1 ? 1.05 : 1.4}" font-weight="700" fill="${st.ink}"`) + '</g>';
+  } else if (d.t === 'measure'){
+    const a = mPt(d.a, o.pos), b = mPt(d.b, o.pos); const m = midp(a, b); const len = dist(a, b);
+    const ang = Math.atan2(b.y - a.y, b.x - a.x), px = -Math.sin(ang) * .8, py = Math.cos(ang) * .8;
+    s += `<g${hit}>` + (o.interactive ? `<line x1="${r2(a.x)}" y1="${r2(a.y)}" x2="${r2(b.x)}" y2="${r2(b.y)}" stroke="transparent" stroke-width="2"/>` : '') +
+      `<g stroke="#ffffff" stroke-width=".16"><line x1="${r2(a.x)}" y1="${r2(a.y)}" x2="${r2(b.x)}" y2="${r2(b.y)}" stroke-dasharray=".5 .3"/>` +
+      `<line x1="${r2(a.x - px)}" y1="${r2(a.y - py)}" x2="${r2(a.x + px)}" y2="${r2(a.y + py)}"/><line x1="${r2(b.x - px)}" y1="${r2(b.y - py)}" x2="${r2(b.x + px)}" y2="${r2(b.y + py)}"/></g>` +
+      pillText(m.x, m.y - 1.2, fmtM(len), 1.1, '#101814', '#ffffff') + '</g>';
+  }
+  if (selected && o.handles) s += handlesFor(d, o);
+  return s;
+}
+function mPt(p, pos){ return p.ref && pos && pos[p.ref] ? pos[p.ref] : p; }
+function handle(x, y, key, shape = 'c'){
+  return shape === 's' ? `<rect data-h="${key}" x="${r2(x - .7)}" y="${r2(y - .7)}" width="1.4" height="1.4" fill="#fff" stroke="#111" stroke-width=".16"/>`
+    : `<circle data-h="${key}" cx="${r2(x)}" cy="${r2(y)}" r=".75" fill="#fff" stroke="#111" stroke-width=".16"/>`;
+}
+function handlesFor(d, o){
+  let s = '';
+  if (d.t === 'arrow'){ s += handle(d.p0.x, d.p0.y, `dp:${d.id}:p0`) + handle(d.p1.x, d.p1.y, `dp:${d.id}:p1`); if (d.curve) s += `<line x1="${r2(d.p0.x)}" y1="${r2(d.p0.y)}" x2="${r2(d.c.x)}" y2="${r2(d.c.y)}" stroke="#fff" stroke-opacity=".5" stroke-width=".08"/>` + handle(d.c.x, d.c.y, `dp:${d.id}:c`, 's'); }
+  if (d.t === 'measure'){ const a = mPt(d.a, o.pos), b = mPt(d.b, o.pos); s += handle(a.x, a.y, `dp:${d.id}:a`) + handle(b.x, b.y, `dp:${d.id}:b`); }
+  if (d.t === 'zone'){ if (d.shape === 'circle') s += handle(d.cx + d.r, d.cy, `dp:${d.id}:r`, 's'); else s += handle(d.x + d.w, d.y + d.h, `dp:${d.id}:br`, 's'); }
+  if (d.t === 'text' || d.t === 'stamp') s += `<circle cx="${r2(d.x)}" cy="${r2(d.y)}" r="2.2" fill="none" stroke="#FFD23F" stroke-width=".18" stroke-dasharray=".5 .3"/>`;
+  if (d.t === 'free'){ const xs = d.pts.map(p => p[0]), ys = d.pts.map(p => p[1]); s += `<rect x="${r2(Math.min(...xs) - .6)}" y="${r2(Math.min(...ys) - .6)}" width="${r2(Math.max(...xs) - Math.min(...xs) + 1.2)}" height="${r2(Math.max(...ys) - Math.min(...ys) + 1.2)}" fill="none" stroke="#FFD23F" stroke-width=".15" stroke-dasharray=".5 .3"/>`; }
+  return s;
+}
+function coneSVG(p, d, fov, range, col){
+  const a1 = (d - fov / 2) * Math.PI / 180, a2 = (d + fov / 2) * Math.PI / 180;
+  const x1 = p.x + Math.cos(a1) * range, y1 = p.y + Math.sin(a1) * range, x2 = p.x + Math.cos(a2) * range, y2 = p.y + Math.sin(a2) * range;
+  const large = fov > 180 ? 1 : 0;
+  if (fov >= 359) return `<circle cx="${r2(p.x)}" cy="${r2(p.y)}" r="${range}" fill="${col}" fill-opacity=".1" stroke="${col}" stroke-opacity=".45" stroke-width=".12"/>`;
+  return `<path d="M${r2(p.x)} ${r2(p.y)}L${r2(x1)} ${r2(y1)}A${range} ${range} 0 ${large} 1 ${r2(x2)} ${r2(y2)}Z" fill="${col}" fill-opacity=".13" stroke="${col}" stroke-opacity=".5" stroke-width=".12"/>`;
+}
+function entityLabel(proj, id, full){
+  if (OFFS.includes(id)) return OFF_LABEL[id];
+  if (id === 'BALL') return 'Ball'; if (id === 'EV') return 'Ereignis';
+  if (id && id.startsWith('ALT:')){ const sc = curScene && curScene(); const a = sc && sc.alts.find(x => 'ALT:' + x.id === id); return 'SR-Alt ' + (a ? a.n : ''); }
+  const t = teamOf(id); if (!t) return id || '?';
+  const pl = proj.teams[t].players[+id.slice(1) - 1];
+  return `${t} ${pl.num}` + (full && pl.name ? ' ' + pl.name : '');
+}
+function markerSVG(id, p, o, mode){
+  const proj = o.proj, mk = o.mk || 1; const hit = o.interactive && mode !== 'ghost' ? ` data-ent="${id}"` : '';
+  const sel = o.sel && o.sel.k === 'ent' && o.sel.id === id && mode !== 'ghost';
+  const op = mode === 'ghost' ? ' opacity=".32"' : '';
+  let s = `<g${hit}${op}>`;
+  const t = teamOf(id);
+  if (o.interactive && mode !== 'ghost') s += `<circle cx="${r2(p.x)}" cy="${r2(p.y)}" r="${r2(2 * mk)}" fill="transparent"/>`;
+  if (sel) s += `<circle cx="${r2(p.x)}" cy="${r2(p.y)}" r="${r2(2.1 * mk)}" fill="none" stroke="#FFD23F" stroke-width=".3"/>`;
+  if (t){
+    const tm = proj.teams[t], pl = tm.players[+id.slice(1) - 1], R = 1.05 * mk * (mode === 'ghost' ? .8 : 1);
+    if (isGK(id)){
+      s += `<rect x="${r2(p.x - R)}" y="${r2(p.y - R)}" width="${r2(2 * R)}" height="${r2(2 * R)}" rx="${r2(R * .38)}" fill="${tm.gk}" stroke="${tm.color}" stroke-width="${r2(.36 * mk)}"/>`;
+      if (mode !== 'ghost') s += T(p.x, p.y + .05, pl.num, `font-size="${r2(R * 1.02)}" font-weight="700" fill="${contrast(tm.gk)}"`);
+    } else {
+      s += `<circle cx="${r2(p.x)}" cy="${r2(p.y)}" r="${r2(R)}" fill="${tm.color}" stroke="rgba(255,255,255,.92)" stroke-width="${r2(.17 * mk)}"/>`;
+      if (mode !== 'ghost') s += T(p.x, p.y + .05, pl.num, `font-size="${r2(R * 1.02)}" font-weight="700" fill="${contrast(tm.color)}"`);
+    }
+    if (o.showNames && pl.name && mode !== 'ghost'){
+      const yy = ROT ? p.y : p.y + R + 1.1, xx = ROT ? p.x - R - 1.1 : p.x;
+      s += T(xx, yy, pl.name, `font-size="${r2(.95 * mk)}" font-weight="600" fill="#fff" stroke="rgba(0,0,0,.6)" stroke-width=".22" paint-order="stroke"`);
+    }
+    if (o.offPlayers && o.offPlayers.includes(id) && mode !== 'ghost'){
+      const fx = p.x + R * .7, fy = p.y - R * .7;
+      s += `<path d="M${r2(fx)} ${r2(fy)}v-1.6l1.3.45-1.3.45" fill="#FFD23F" stroke="#111" stroke-width=".1"/>`;
+    }
+  } else if (id === 'SR'){
+    const R = 1.25 * mk; const c = proj.officials.SR;
+    s += `<circle cx="${r2(p.x)}" cy="${r2(p.y)}" r="${r2(R)}" fill="${c.color}" stroke="#fff" stroke-width="${r2(.3 * mk)}"/>`;
+    if (mode !== 'ghost') s += T(p.x, p.y + .05, 'SR', `font-size="${r2(.92 * mk)}" font-weight="700" fill="${contrast(c.color)}"`) +
+      `<circle cx="${r2(p.x)}" cy="${r2(p.y)}" r="${r2(R + .38)}" fill="none" stroke="${c.sight}" stroke-width=".16"/>`;
+  } else if (id === 'SRA1' || id === 'SRA2'){
+    const R = 1.2 * mk, c = proj.officials[id];
+    s += `<path d="M${r2(p.x)} ${r2(p.y - R * 1.3)}L${r2(p.x + R * 1.2)} ${r2(p.y + R * .85)}L${r2(p.x - R * 1.2)} ${r2(p.y + R * .85)}Z" fill="${c.color}" stroke="#fff" stroke-width="${r2(.26 * mk)}" stroke-linejoin="round"/>`;
+    if (mode !== 'ghost'){
+      s += T(p.x, p.y + R * .2, id.slice(3), `font-size="${r2(.9 * mk)}" font-weight="700" fill="${contrast(c.color)}"`);
+      // Beschriftung zur Feldaußenseite hin
+      const sgn = p.y < 34 ? -1 : 1, off = ROT ? R * 4.2 : R * 2.4;
+      s += pillText(p.x, p.y + sgn * off, OFF_LABEL[id], 1.05 * mk, c.sight, '#111');
+    }
+  } else if (id === 'BALL'){
+    const R = .62 * mk;
+    s += `<circle cx="${r2(p.x)}" cy="${r2(p.y)}" r="${r2(R)}" fill="#fff" stroke="#111" stroke-width=".14"/><circle cx="${r2(p.x)}" cy="${r2(p.y)}" r="${r2(R * .38)}" fill="#111"/>`;
+  } else if (id === 'EV'){
+    const R = 1.5 * mk; let d = '';
+    for (let i = 0; i < 10; i++){ const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? R * .45 : R; d += (i ? 'L' : 'M') + r2(p.x + Math.cos(a) * rr) + ' ' + r2(p.y + Math.sin(a) * rr); }
+    s += `<path d="${d}Z" fill="#FFD23F" stroke="#7A1020" stroke-width=".18"/>`;
+  }
+  return s + '</g>';
+}
+function altSVG(a, o){
+  const sel = o.sel && o.sel.k === 'alt' && o.sel.id === a.id; const c = o.proj.officials.SR;
+  const hit = o.interactive ? ` data-alt="${a.id}"` : '';
+  return `<g${hit}>` + (o.interactive ? `<circle cx="${r2(a.x)}" cy="${r2(a.y)}" r="2" fill="transparent"/>` : '') +
+    (sel ? `<circle cx="${r2(a.x)}" cy="${r2(a.y)}" r="2.1" fill="none" stroke="#FFD23F" stroke-width=".3"/>` : '') +
+    `<circle cx="${r2(a.x)}" cy="${r2(a.y)}" r="1.25" fill="rgba(0,0,0,.35)" stroke="${c.sight}" stroke-width=".26" stroke-dasharray=".55 .3"/>` +
+    T(a.x, a.y + .05, 'A' + a.n, `font-size=".9" font-weight="700" fill="${c.sight}"`) + '</g>';
+}
+function sightGeom(sc, pos, sg){
+  const src = pos[sg.from]; let tgt = sg.to ? pos[sg.to] : sg.pt;
+  if (sg.to === 'EV' && !sc.hasEv) tgt = null;
+  return {src, tgt};
+}
+// Hauptfunktion: komplette Weltszene als SVG-String
+function buildWorld(sc, t, o){
+  ROT = !!o.rot; const proj = o.proj; const tog = o.tog; const lay = o.layers;
+  const pos = posAt(sc, t); o.pos = pos;
+  const master = tog.master;
+  let s = pitchSVG();
+  if (o.grid) s += gridSVG();
+  // Zonen zuerst
+  if (lay.runs) sc.drawings.filter(d => d.t === 'zone').forEach(d => { s += drawingSVG(d, o); });
+  // Sichtkegel
+  if (lay.cones && master && tog.cones){
+    OFFS.forEach(k => { const of = sc.offi[k]; s += coneSVG(pos[k], pos[k].d || 0, of.fov, of.range, proj.officials[k].sight); });
+  }
+  // Abseitslinie
+  let offPlayers = [];
+  if (sc.offside === 'A' || sc.offside === 'B'){
+    const line = offLine(pos, sc.offside); offPlayers = offsidePlayers(pos, sc.offside, line);
+    s += `<line x1="${r2(line)}" y1="0" x2="${r2(line)}" y2="${W}" stroke="#FFD23F" stroke-width=".22" stroke-dasharray="1.2 .6"/>` +
+      pillText(line, W / 2 + (ROT ? 0 : 0), 'Abseitslinie', .9, '#FFD23F', '#111');
+  }
+  o.offPlayers = offPlayers;
+  // Geister / frühere Positionen
+  if (lay.ghosts && master && tog.ghosts){
+    const upto = Math.floor(t + 1e-9);
+    [...PERSONS, 'BALL'].forEach(k => {
+      const pts = []; for (let i = 0; i <= Math.min(upto, sc.frames.length - 1); i++) pts.push(sc.frames[i][k]);
+      pts.push(pos[k]);
+      let moved = 0; for (let i = 1; i < pts.length; i++) moved += dist(pts[i - 1], pts[i]);
+      if (moved < 0.5) return;
+      s += `<polyline points="${pts.map(p => r2(p.x) + ',' + r2(p.y)).join(' ')}" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width=".14" stroke-dasharray=".25 .35"/>`;
+      for (let i = 0; i < pts.length - 1; i++) if (dist(pts[i], pos[k]) > 0.4) s += markerSVG(k, pts[i], o, 'ghost');
+    });
+  }
+  // Zeichnungen (außer Zonen, Text, Stempel)
+  if (lay.runs) sc.drawings.filter(d => d.t === 'arrow' || d.t === 'free' || d.t === 'measure').forEach(d => { s += drawingSVG(d, o); });
+  // Blickrichtungen
+  if (lay.players && master && tog.dirs){
+    OFFS.forEach(k => {
+      const p = pos[k], a = (p.d || 0) * Math.PI / 180, col = proj.officials[k].sight; const e = {x:p.x + Math.cos(a) * 4.2, y:p.y + Math.sin(a) * 4.2};
+      s += `<line x1="${r2(p.x)}" y1="${r2(p.y)}" x2="${r2(e.x)}" y2="${r2(e.y)}" stroke="${col}" stroke-width=".26"/>` + arrowHead({p0:p, p1:e}, col, 1);
+    });
+  }
+  // Sichtlinien
+  const blockRings = new Map();
+  const sightStat = {};
+  const showLines = lay.sight && master && tog.lines;
+  const occ = lay.occl && master && tog.occl;
+  sc.sights.forEach(sg => {
+    const {src, tgt} = sightGeom(sc, pos, sg);
+    let res = src && tgt ? sightCheck(pos, src, tgt, [sg.from, sg.to].filter(Boolean), o.width) : {status:'unclear', blockers:[], unclear:[], len:0};
+    if (!src || !tgt) res.status = 'unclear';
+    sightStat[sg.id] = res;
+    if (!showLines || !sg.on || !src || !tgt) return;
+    const col = occ ? STATUS_COL[res.status] : sightColor(proj, sg.from);
+    const sel = o.sel && o.sel.k === 'sight' && o.sel.id === sg.id;
+    const hit = o.interactive ? ` data-sight="${sg.id}"` : '';
+    s += `<g${hit}>` + (o.interactive ? `<line x1="${r2(src.x)}" y1="${r2(src.y)}" x2="${r2(tgt.x)}" y2="${r2(tgt.y)}" stroke="transparent" stroke-width="1.8"/>` : '') +
+      `<line x1="${r2(src.x)}" y1="${r2(src.y)}" x2="${r2(tgt.x)}" y2="${r2(tgt.y)}" stroke="rgba(0,0,0,.45)" stroke-width="${sel ? .62 : .48}"/>` +
+      `<line x1="${r2(src.x)}" y1="${r2(src.y)}" x2="${r2(tgt.x)}" y2="${r2(tgt.y)}" stroke="${col}" stroke-width="${sel ? .36 : .26}"/>`;
+    if (!sg.to) s += `<circle cx="${r2(tgt.x)}" cy="${r2(tgt.y)}" r=".55" fill="${col}" stroke="#111" stroke-width=".12"/>`;
+    s += '</g>';
+    if (tog.dist){ const m = midp(src, tgt); s += pillText(m.x, m.y, fmtM(res.len), 1.1, '#101814', col); }
+    if (occ) [...res.blockers].forEach(k => blockRings.set(k, 'blocked'));
+    if (occ) res.unclear.forEach(k => { if (!blockRings.has(k)) blockRings.set(k, 'unclear'); });
+  });
+  o.sightStat = sightStat;
+  // Analyse-Linien (gestrichelt) zum Analyseziel
+  if (o.analysis && lay.sight && master){
+    const tgtId = o.analysis.target; const tgt = pos[tgtId];
+    if (tgt && (tgtId !== 'EV' || sc.hasEv)){
+      [...OFFS, ...sc.alts.map(a => 'ALT:' + a.id)].forEach(k => {
+        if (sc.sights.some(sg => sg.from === k && sg.to === tgtId && sg.on && showLines)) return;
+        const src = pos[k]; if (!src) return; const res = sightCheck(pos, src, tgt, [k, tgtId], o.width);
+        const col = occ ? STATUS_COL[res.status] : sightColor(proj, k);
+        s += `<line x1="${r2(src.x)}" y1="${r2(src.y)}" x2="${r2(tgt.x)}" y2="${r2(tgt.y)}" stroke="${col}" stroke-opacity=".85" stroke-width=".16" stroke-dasharray=".7 .45"/>`;
+        if (occ) res.blockers.forEach(b => { if (!blockRings.has(b)) blockRings.set(b, 'blocked'); });
+      });
+    }
+  }
+  // Alternativpositionen
+  if (lay.players) sc.alts.forEach(a => { s += altSVG(a, o); });
+  // Marker
+  if (lay.players){
+    if (sc.hasEv) s += markerSVG('EV', pos.EV, o);
+    PLAYERS.forEach(k => { s += markerSVG(k, pos[k], o); });
+    s += markerSVG('BALL', pos.BALL, o);
+    OFFS.forEach(k => { s += markerSVG(k, pos[k], o); });
+  }
+  blockRings.forEach((st, k) => {
+    const p = pos[k]; const col = st === 'blocked' ? '#FF3B4E' : '#E9EEEB';
+    s += `<circle cx="${r2(p.x)}" cy="${r2(p.y)}" r="${r2(1.85 * (o.mk || 1))}" fill="none" stroke="${col}" stroke-width=".26" stroke-dasharray=".55 .3" pointer-events="none"/>`;
+  });
+  // Text & Stempel oben
+  if (lay.runs) sc.drawings.filter(d => d.t === 'text' || d.t === 'stamp').forEach(d => { s += drawingSVG(d, o); });
+  // Bedienelemente
+  if (o.handles && o.sel){
+    if (o.sel.k === 'ent' && OFFS.includes(o.sel.id)){
+      const p = pos[o.sel.id], a = (p.d || 0) * Math.PI / 180; const hx = p.x + Math.cos(a) * 6, hy = p.y + Math.sin(a) * 6;
+      s += `<line x1="${r2(p.x)}" y1="${r2(p.y)}" x2="${r2(hx)}" y2="${r2(hy)}" stroke="#fff" stroke-opacity=".6" stroke-width=".1"/>` +
+        `<circle data-h="rot:${o.sel.id}" cx="${r2(hx)}" cy="${r2(hy)}" r=".85" fill="${proj.officials[o.sel.id].sight}" stroke="#111" stroke-width=".18"/>`;
+    }
+  }
+  if (o.draft) s += drawingSVG(o.draft, {...o, interactive:false, sel:null});
+  if (o.pending && pos[o.pending.from] && o.hover){
+    const p = pos[o.pending.from];
+    s += `<line x1="${r2(p.x)}" y1="${r2(p.y)}" x2="${r2(o.hover.x)}" y2="${r2(o.hover.y)}" stroke="#fff" stroke-width=".2" stroke-dasharray=".6 .4" pointer-events="none"/>`;
+  }
+  return s;
+}
+
+/* ===================== Zustand & Speicherung ===================== */
+const S = {proj:null, t:0, playing:false, playAll:false, hold:0, speed:1, tool:'select', runStyle:'solid', stamp:'foul', drawColor:'auto',
+  sel:null, drag:null, draft:null, pending:null, hover:null, view:null, orient:'land',
+  tog:{lines:true, cones:true, occl:true, dist:true, dirs:true, ghosts:false, master:true},
+  showNames:false, grid:false, mk:1.25, width:0.8, anTarget:'auto', anLines:true, clip:null, undo:[], redo:[], preEdit:null,
+  storageOK:true, openSecs:{}, lastPos:null, lastStat:{}};
+const curScene = () => S.proj.scenes[S.proj.cur];
+const fi = () => clamp(Math.round(S.t), 0, curScene().frames.length - 1);
+const $ = s => document.querySelector(s);
+const svg = $('#stage'), world = $('#world');
+
+const KEY = 'srtb1';
+const store = {
+  get(k){ try { return localStorage.getItem(KEY + ':' + k); } catch (e) { return null; } },
+  set(k, v){ try { localStorage.setItem(KEY + ':' + k, v); return true; } catch (e) { return false; } },
+  del(k){ try { localStorage.removeItem(KEY + ':' + k); } catch (e) {} },
+};
+function listProjects(){ try { const a = JSON.parse(store.get('index') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function saveNow(){
+  const p = S.proj; if (!p) return; p.updated = Date.now(); curScene().at = fi();
+  const ok = store.set('p:' + p.id, JSON.stringify(p));
+  const idx = listProjects().filter(x => x.id !== p.id); idx.unshift({id:p.id, name:p.name, updated:p.updated, scenes:p.scenes.length});
+  store.set('index', JSON.stringify(idx)); store.set('last', p.id); S.storageOK = ok;
+  const st = $('#saveState'); if (st) st.textContent = ok ? 'Automatisch gespeichert · ' + new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'}) : 'Lokales Speichern nicht möglich – bitte als JSON exportieren.';
+}
+let saveTimer = 0; function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 350); }
+function savePrefs(){ store.set('prefs', JSON.stringify({tog:S.tog, showNames:S.showNames, grid:S.grid, mk:S.mk, width:S.width, orient:S.orient, anLines:S.anLines})); }
+function loadPrefs(){ try { const p = JSON.parse(store.get('prefs') || 'null'); if (!p) return; Object.assign(S.tog, p.tog || {}); ['showNames','grid','anLines'].forEach(k => { if (typeof p[k] === 'boolean') S[k] = p[k]; }); if (p.mk) S.mk = clamp(+p.mk, .6, 1.6); if (p.width) S.width = clamp(+p.width, .3, 1.6); if (p.orient === 'port') S.orient = 'port'; S.hadPrefs = true; } catch (e) {} }
+function loadProject(id){ try { const s = store.get('p:' + id); return s ? migrate(JSON.parse(s)) : null; } catch (e) { return null; } }
+
+const isHex = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
+const fin = v => typeof v === 'number' && isFinite(v);
+const finPt = p => p && fin(+p.x) && fin(+p.y);
+function cleanDrawing(d){
+  if (!d || typeof d !== 'object') return null; const o = {...d, id:typeof d.id === 'string' ? d.id : uid()};
+  if (d.t === 'arrow'){ if (!finPt(d.p0) || !finPt(d.p1)) return null; o.c = finPt(d.c) ? d.c : midp(d.p0, d.p1); o.kind = ['run','pass','flight','look'].includes(d.kind) ? d.kind : 'run'; return o; }
+  if (d.t === 'free') return Array.isArray(d.pts) && d.pts.length > 1 && d.pts.every(p => Array.isArray(p) && fin(+p[0]) && fin(+p[1])) ? o : null;
+  if (d.t === 'text') return fin(+d.x) && fin(+d.y) ? {...o, text:String(d.text || '')} : null;
+  if (d.t === 'stamp') return fin(+d.x) && fin(+d.y) && STAMPS[d.kind] ? o : null;
+  if (d.t === 'zone') return d.shape === 'circle' ? (fin(+d.cx) && fin(+d.cy) && fin(+d.r) ? o : null) : (fin(+d.x) && fin(+d.y) && fin(+d.w) && fin(+d.h) ? {...o, shape:'rect'} : null);
+  if (d.t === 'measure') return finPt(d.a) && finPt(d.b) ? o : null;
+  return null;
+}
+function migrate(p){
+  if (!p || typeof p !== 'object' || Array.isArray(p)) throw new Error('Die Datei enthält kein Projekt-Objekt.');
+  if (!Array.isArray(p.scenes) || !p.scenes.length) throw new Error('Im Projekt fehlt die Szenenliste („scenes“) oder sie ist leer.');
+  const out = {v:1, id:typeof p.id === 'string' ? p.id : uid(), name:String(p.name || 'Importiertes Projekt').slice(0, 80), created:p.created || Date.now(), updated:Date.now(), teams:defaultTeams(), officials:defaultOfficials(), scenes:[], cur:0};
+  ['A','B'].forEach(t => {
+    const s = p.teams && p.teams[t]; if (!s) return; const d = out.teams[t];
+    if (typeof s.name === 'string') d.name = s.name.slice(0, 40); if (isHex(s.color)) d.color = s.color; if (isHex(s.gk)) d.gk = s.gk; if (FORMS[s.form]) d.form = s.form;
+    if (Array.isArray(s.players)) s.players.slice(0, 11).forEach((pl, i) => { if (pl){ d.players[i].num = clamp(parseInt(pl.num, 10) || 0, 0, 99); d.players[i].name = String(pl.name || '').slice(0, 40); } });
+  });
+  OFFS.forEach(k => { const s = p.officials && p.officials[k]; if (s){ if (isHex(s.color)) out.officials[k].color = s.color; if (isHex(s.sight)) out.officials[k].sight = s.sight; } });
+  p.scenes.forEach((sc, si) => {
+    if (!sc || !Array.isArray(sc.frames) || !sc.frames.length) throw new Error(`Szene ${si + 1}: Positionsdaten („frames“) fehlen.`);
+    const fixFrame = (f, fidx) => { const o = {}; ENTS.forEach(k => {
+      const v = f && f[k];
+      if (!finPt(v)){ if (k === 'EV'){ o[k] = {x:L/2, y:W/2}; return; } throw new Error(`Szene ${si + 1}, Schritt ${fidx + 1}: Position für „${k}“ fehlt oder ist ungültig.`); }
+      o[k] = {x:+v.x, y:+v.y}; if (fin(+v.d)) o[k].d = +v.d; }); return o; };
+    const frames = sc.frames.map(fixFrame);
+    const s = makeScene(String(sc.name || 'Szene ' + (si + 1)).slice(0, 80), frames);
+    if (typeof sc.id === 'string') s.id = sc.id;
+    s.notes = String(sc.notes || '');
+    try { s.origin = sc.origin ? fixFrame(sc.origin, 0) : clone(frames[0]); } catch (e) { s.origin = clone(frames[0]); }
+    s.drawings = Array.isArray(sc.drawings) ? sc.drawings.map(cleanDrawing).filter(Boolean) : [];
+    s.alts = Array.isArray(sc.alts) ? sc.alts.filter(finPt).map((a, i) => ({id:typeof a.id === 'string' ? a.id : uid(), x:+a.x, y:+a.y, n:a.n || i + 1})) : [];
+    s.sights = Array.isArray(sc.sights) ? sc.sights.filter(x => x && typeof x.from === 'string' && (typeof x.to === 'string' || finPt(x.pt)))
+      .map(x => ({id:typeof x.id === 'string' ? x.id : uid(), from:x.from, to:typeof x.to === 'string' ? x.to : null, pt:x.to ? null : {x:+x.pt.x, y:+x.pt.y}, on:x.on !== false})) : [];
+    s.hasEv = !!sc.hasEv; s.offside = ['A','B'].includes(sc.offside) ? sc.offside : 'off';
+    if (sc.offi) OFFS.forEach(k => { const v = sc.offi[k]; if (v){ s.offi[k].fov = clamp(+v.fov || 110, 20, 360); s.offi[k].range = clamp(+v.range || 35, 5, 120); s.offi[k].track = v.track !== false; } });
+    s.locked = sc.locked && typeof sc.locked === 'object' ? {...sc.locked} : {};
+    s.at = clamp(+sc.at || 0, 0, frames.length - 1); s.tmpl = sc.tmpl || null;
+    out.scenes.push(s);
+  });
+  out.cur = clamp(parseInt(p.cur, 10) || 0, 0, out.scenes.length - 1);
+  return out;
+}
+
+/* ===================== Verlauf (Rückgängig) ===================== */
+const snap = () => JSON.stringify(S.proj);
+function pushUndo(s){ S.undo.push(s); if (S.undo.length > 120) S.undo.shift(); S.redo = []; updUndo(); }
+function mutate(fn, panels = true){ pushUndo(snap()); fn(); save(); if (panels) renderPanels(); draw(); }
+function restore(json){
+  const notes = {}; S.proj.scenes.forEach(s => { notes[s.id] = s.notes; });
+  S.proj = JSON.parse(json); S.proj.scenes.forEach(s => { if (s.id in notes) s.notes = notes[s.id]; });
+  S.t = clamp(S.t, 0, curScene().frames.length - 1); validateSel(); save(); renderAll();
+}
+function undo(){ if (!S.undo.length) return; S.redo.push(snap()); restore(S.undo.pop()); updUndo(); }
+function redo(){ if (!S.redo.length) return; S.undo.push(snap()); restore(S.redo.pop()); updUndo(); }
+function updUndo(){ $('#undoBtn').disabled = !S.undo.length; $('#redoBtn').disabled = !S.redo.length; }
+function validateSel(){
+  const sc = curScene(), s = S.sel; if (!s) return;
+  if (s.k === 'draw' && !sc.drawings.find(d => d.id === s.id)) S.sel = null;
+  if (s.k === 'sight' && !sc.sights.find(d => d.id === s.id)) S.sel = null;
+  if (s.k === 'alt' && !sc.alts.find(d => d.id === s.id)) S.sel = null;
+  if (s.k === 'ent' && s.id === 'EV' && !sc.hasEv) S.sel = null;
+}
+
+/* ===================== Hilfen UI ===================== */
+let toastTimer = 0;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.textContent = ''; }, 3600); }
+function hud(msg){ $('#hudMsg').textContent = msg || ''; }
+const ICON = {
+  select:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 3l11 6-5 1.4L8 16z" stroke-linejoin="round"/></svg>',
+  run:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 16L15 5"/><path d="M9.5 5H15v5.5"/></svg>',
+  pass:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="4.5" cy="14.5" r="2"/><path d="M7 13l8-7" stroke-dasharray="2 1.6"/><path d="M11 5.5h4.2v4"/></svg>',
+  flight:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 16Q8 2 17 12" stroke-dasharray=".2 2.6"/><path d="M13.6 12.6l3.4-.6-.4-3.5"/></svg>',
+  look:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 10S5 4.5 10 4.5 18.5 10 18.5 10 15 15.5 10 15.5 1.5 10 1.5 10z"/><circle cx="10" cy="10" r="2.4"/></svg>',
+  free:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 14c2-6 4-6 5-3s3 3 4-1 3-5 5-3"/></svg>',
+  text:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h12M10 5v11"/></svg>',
+  zone:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="14" height="12" rx="1" stroke-dasharray="2.2 1.4"/></svg>',
+  danger:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="14" height="12" rx="1" fill="currentColor" fill-opacity=".18"/><path d="M10 7v4M10 13.3v.4"/></svg>',
+  circle:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7" stroke-dasharray="2.2 1.4"/><circle cx="10" cy="10" r="1"/></svg>',
+  stamp:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="M7.5 6.5h5M7.5 6.5v7M7.5 10h4"/></svg>',
+  measure:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 13.5l11-11 4 4-11 11z"/><path d="M6 10l1.5 1.5M8.5 7.5l1.5 1.5M11 5l1.5 1.5"/></svg>',
+  sight:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="4" cy="15" r="2.2"/><circle cx="16" cy="5" r="1.6" fill="currentColor"/><path d="M5.8 13.4l8.6-7.2"/></svg>',
+  event:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M10 2.5l2.2 4.6 5 .6-3.7 3.4 1 5-4.5-2.5-4.5 2.5 1-5L2.8 7.7l5-.6z"/></svg>',
+  alt:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="6" stroke-dasharray="2 1.5"/><path d="M7.5 12.5l2.5-6 2.5 6M8.4 10.5h3.2"/></svg>',
+  lock:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 016 0v2"/></svg>',
+  unlock:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 015.8-1"/></svg>',
+};
+const TOOLS = [
+  ['select','Bewegen','Auswählen und verschieben (V)'],
+  ['run','Laufweg','Laufweg-Pfeil zeichnen – Start auf einer Person verknüpft den Weg für die Animation'],
+  ['pass','Pass','Passweg zeichnen'],
+  ['flight','Ballflug','Gekrümmte Ballflugbahn'],
+  ['look','Blick','Blickrichtungs-Pfeil'],
+  ['free','Freihand','Freihandzeichnung'],
+  ['text','Text','Textfeld / Kommentar setzen'],
+  ['zone','Bereich','Spielfeldbereich markieren'],
+  ['danger','Gefahr','Gefahren- / Foulzone markieren'],
+  ['circle','Kreis','Kreisbereich (z. B. 9,15 m)'],
+  ['stamp','Symbol','Symbol setzen: Foul, Hand, Tor?, Karte, Teamoffizieller'],
+  ['measure','Messen','Abstand messen (rastet an Personen ein)'],
+  ['sight','Sichtlinie','Sichtlinie: erst SR/SRA anklicken, dann Ziel'],
+  ['event','Ereignis','Ereignispunkt für die Positionierungsanalyse setzen'],
+  ['alt','SR-Alt.','Alternative SR-Position zum Vergleich setzen'],
+];
+const TOOL_HINT = {
+  select:'', run:'Ziehen, um einen Laufweg zu zeichnen. Startet der Pfeil auf einer Person, folgt sie ihm in der Animation.',
+  pass:'Vom Ball oder Spieler aus ziehen.', flight:'Ziehen für eine gekrümmte Ballflugbahn.', look:'Ziehen, um eine Blickrichtung einzuzeichnen.',
+  free:'Frei zeichnen.', text:'Auf das Feld tippen, um Text zu setzen.', zone:'Rechteck aufziehen.', danger:'Gefahrenzone aufziehen.', circle:'Vom Mittelpunkt aus aufziehen.',
+  stamp:'Auf das Feld tippen, um das gewählte Symbol zu setzen.', measure:'Von Punkt zu Punkt ziehen. Auf Personen rastet die Messung ein.',
+  sight:'Zuerst SR, SRA 1, SRA 2 oder eine SR-Alternative antippen, danach Spieler, Ball, Ereignis oder einen Punkt.',
+  event:'Auf das Feld tippen, um den Ereignispunkt zu setzen.', alt:'Auf das Feld tippen, um eine alternative SR-Position zu setzen (bis zu 4).',
+};
+
+/* ===================== Ansicht ===================== */
+const VIEWS = {full:{x:-7, y:-7, w:119, h:82}, halfL:{x:-7, y:-7, w:62, h:82}, halfR:{x:50, y:-7, w:62, h:82}, boxL:{x:-5, y:7, w:30, h:54}, boxR:{x:80, y:7, w:30, h:54}};
+function setView(name){ const r = VIEWS[name] || VIEWS.full; S.view = S.orient === 'port' ? {x:W - (r.y + r.h), y:r.x, w:r.h, h:r.w} : {...r}; draw(); }
+function svgPt(cx, cy){ const m = svg.getScreenCTM(); if (!m) return {x:0, y:0}; const p = svg.createSVGPoint(); p.x = cx; p.y = cy; const q = p.matrixTransform(m.inverse()); return {x:q.x, y:q.y}; }
+function fieldPt(e){ const m = world.getScreenCTM(); if (!m) return {x:0, y:0}; const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; const q = p.matrixTransform(m.inverse()); return {x:q.x, y:q.y}; }
+function zoomAt(pt, f){
+  const v = S.view; const nw = clamp(v.w * f, 8, 170); f = nw / v.w;
+  S.view = {x:pt.x - (pt.x - v.x) * f, y:pt.y - (pt.y - v.y) * f, w:v.w * f, h:v.h * f}; draw();
+}
+function zoomCenter(f){ const v = S.view; zoomAt({x:v.x + v.w / 2, y:v.y + v.h / 2}, f); }
+
+/* ===================== Zeichnen ===================== */
+function anTargetFor(sc){
+  let t = S.anTarget;
+  if (t === 'auto') t = sc.hasEv ? 'EV' : 'BALL';
+  if (t === 'sel') t = S.sel && S.sel.k === 'ent' ? S.sel.id : (sc.hasEv ? 'EV' : 'BALL');
+  if (t === 'EV' && !sc.hasEv) t = 'BALL';
+  return t;
+}
+function liveOpts(){
+  const sc = curScene();
+  return {proj:S.proj, rot:S.orient === 'port', tog:S.tog, layers:{players:true, runs:true, sight:true, cones:true, occl:true, ghosts:true},
+    grid:S.grid, showNames:S.showNames, mk:S.mk, width:S.width, interactive:true, handles:!S.playing, sel:S.sel, draft:S.draft,
+    pending:S.pending, hover:S.hover, analysis:S.anLines ? {target:anTargetFor(sc)} : null};
+}
+let drawQ = false;
+function draw(){ if (drawQ) return; drawQ = true; requestAnimationFrame(() => { drawQ = false; drawNow(); }); }
+function drawNow(){
+  const sc = curScene(); const v = S.view;
+  svg.setAttribute('viewBox', `${r2(v.x)} ${r2(v.y)} ${r2(v.w)} ${r2(v.h)}`);
+  world.setAttribute('transform', S.orient === 'port' ? 'translate(68 0) rotate(90)' : '');
+  const o = liveOpts(); world.innerHTML = buildWorld(sc, S.t, o);
+  S.lastPos = o.pos; S.lastStat = o.sightStat || {};
+  renderLive();
+}
+
+/* ===================== Panels ===================== */
+function secOpen(id, def){ return (id in S.openSecs ? S.openSecs[id] : def) ? ' open' : ''; }
+function teamOptions(selected, opts = {}){
+  const p = S.proj; let h = '';
+  if (opts.none) h += `<option value="">– ohne –</option>`;
+  h += '<optgroup label="Gespann">' + OFFS.map(k => `<option value="${k}"${selected === k ? ' selected' : ''}>${OFF_LABEL[k]}</option>`).join('') + '</optgroup>';
+  h += `<optgroup label="Ball / Ereignis"><option value="BALL"${selected === 'BALL' ? ' selected' : ''}>Ball</option>` + (curScene().hasEv || selected === 'EV' ? `<option value="EV"${selected === 'EV' ? ' selected' : ''}>Ereignis</option>` : '') + '</optgroup>';
+  ['A','B'].forEach(t => { h += `<optgroup label="${esc(p.teams[t].name)}">` + (t === 'A' ? AIDS : BIDS).map(k => `<option value="${k}"${selected === k ? ' selected' : ''}>${esc(entityLabel(p, k, true))}${isGK(k) ? ' (TW)' : ''}</option>`).join('') + '</optgroup>'; });
+  if (opts.alts) h += curScene().alts.length ? '<optgroup label="SR-Alternativen">' + curScene().alts.map(a => `<option value="ALT:${a.id}"${selected === 'ALT:' + a.id ? ' selected' : ''}>SR-Alt ${a.n}</option>`).join('') + '</optgroup>' : '';
+  return h;
+}
+function sourceOptions(selected){
+  return OFFS.map(k => `<option value="${k}"${selected === k ? ' selected' : ''}>${OFF_LABEL[k]}</option>`).join('') +
+    curScene().alts.map(a => `<option value="ALT:${a.id}"${selected === 'ALT:' + a.id ? ' selected' : ''}>SR-Alt ${a.n}</option>`).join('');
+}
+function renderLeft(){
+  const p = S.proj, sc = curScene();
+  const groups = {}; SCN.forEach(s => { (groups[s.g] = groups[s.g] || []).push(s); });
+  let h = `<details class="sec" data-sec="tmpl"${secOpen('tmpl', true)}><summary>Szenario-Vorlagen</summary><div class="sec-body">
+    <select id="tmplSel" aria-label="Vorlage">${Object.entries(groups).map(([g, list]) => `<optgroup label="${esc(g)}">${list.map(s => `<option value="${s.k}">${esc(s.n)}</option>`).join('')}</optgroup>`).join('')}</select>
+    <div class="row"><button class="btn small primary" data-act="tmplNew">Als neue Szene laden</button><button class="btn small" data-act="tmplReplace">Aktuelle ersetzen</button></div>
+    <p class="hint">Jede Vorlage lädt plausible Ausgangspositionen, Laufwege, Sichtlinien und Hinweise. Alle Positionen sind danach frei veränderbar.</p></div></details>`;
+  h += `<details class="sec" data-sec="off"${secOpen('off', true)}><summary>Schiedsrichtergespann</summary><div class="sec-body">
+    <div class="offrow lbl"><span></span><span></span><span>Marker</span><span>Sicht</span></div>` +
+    OFFS.map(k => `<div class="offrow"><button class="dot" style="background:${p.officials[k].color};border-color:${p.officials[k].sight};${k !== 'SR' ? 'border-radius:3px' : ''}" data-act="selEnt" data-id="${k}" aria-label="${OFF_LABEL[k]} auswählen"></button>
+      <span><b>${OFF_LABEL[k]}</b> <button class="lockbtn${sc.locked[k] ? ' on' : ''}" data-act="lock" data-id="${k}" title="Sperren / entsperren">${sc.locked[k] ? ICON.lock : ICON.unlock}</button></span>
+      <input type="color" id="oc-${k}" data-in="offColor" data-id="${k}" value="${p.officials[k].color}" aria-label="Markerfarbe ${OFF_LABEL[k]}">
+      <input type="color" id="os-${k}" data-in="offSight" data-id="${k}" value="${p.officials[k].sight}" aria-label="Sichtfarbe ${OFF_LABEL[k]}"></div>`).join('') +
+    `<p class="hint">Markerfarbe = Symbol auf dem Feld, Sichtfarbe = Sichtkegel, Laufwege und Beschriftung.</p></div></details>`;
+  ['A','B'].forEach(t => {
+    const tm = p.teams[t]; const ids = t === 'A' ? AIDS : BIDS;
+    h += `<details class="sec" data-sec="team${t}"${secOpen('team' + t, t === 'A')}><summary><span class="dot" style="background:${tm.color};width:14px;height:14px"></span>Mannschaft ${t} · ${esc(tm.name)}</summary><div class="sec-body">
+      <div class="row"><input type="text" id="tn-${t}" data-in="teamName" data-team="${t}" value="${esc(tm.name)}" aria-label="Mannschaftsname" style="flex:1">
+      <label>Trikot <input type="color" id="tc-${t}" data-in="teamColor" data-team="${t}" value="${tm.color}"></label>
+      <label>TW <input type="color" id="tg-${t}" data-in="teamGk" data-team="${t}" value="${tm.gk}"></label></div>
+      <div class="row"><select id="tf-${t}" data-ch="teamForm" data-team="${t}" aria-label="Formation">${Object.keys(FORMS).map(f => `<option${f === tm.form ? ' selected' : ''}>${f}</option>`).join('')}</select>
+      <button class="btn small" data-act="applyForm" data-team="${t}">Formation laden</button><span class="hint">${t === 'A' ? 'spielt nach rechts →' : '← spielt nach links'}</span></div>
+      <div class="plist">${ids.map(k => { const pl = tm.players[+k.slice(1) - 1];
+        return `<div class="prow" data-id="${k}"><button class="dot${isGK(k) ? ' gk' : ''}" style="background:${isGK(k) ? tm.gk : tm.color}" data-act="selEnt" data-id="${k}" aria-label="${esc(entityLabel(p, k))} auswählen"></button>
+        <input type="number" id="pn-${k}" min="0" max="99" data-in="pnum" data-id="${k}" value="${pl.num}" aria-label="Rückennummer">
+        <input type="text" id="pm-${k}" data-in="pname" data-id="${k}" value="${esc(pl.name)}" placeholder="${isGK(k) ? 'Torwart' : 'Name'}" aria-label="Spielername">
+        <button class="lockbtn${sc.locked[k] ? ' on' : ''}" data-act="lock" data-id="${k}" title="Sperren / entsperren">${sc.locked[k] ? ICON.lock : ICON.unlock}</button></div>`; }).join('')}</div>
+      </div></details>`;
+  });
+  h += `<details class="sec" data-sec="disp"${secOpen('disp', false)}><summary>Darstellung</summary><div class="sec-body">
+    <label class="sw"><input type="checkbox" id="dNames" data-pref="showNames"${S.showNames ? ' checked' : ''}> Spielernamen anzeigen</label>
+    <label class="sw"><input type="checkbox" id="dGrid" data-pref="grid"${S.grid ? ' checked' : ''}> Raster (5 m) einblenden</label>
+    <label class="lbl" for="dMk">Markergröße</label><input type="range" id="dMk" min="0.6" max="1.6" step="0.05" value="${S.mk}" data-pref="mk">
+    <div class="row"><span class="lbl">Ausrichtung</span><button class="btn small${S.orient === 'land' ? ' primary' : ''}" data-act="orient" data-o="land">Querformat</button><button class="btn small${S.orient === 'port' ? ' primary' : ''}" data-act="orient" data-o="port">Hochformat</button></div>
+    <div class="row"><button class="btn small" data-act="lockAll" data-v="1">Alle Spieler sperren</button><button class="btn small" data-act="lockAll" data-v="0">Alle entsperren</button></div>
+  </div></details>`;
+  $('#left').innerHTML = h;
+}
+function renderRight(){
+  const sc = curScene();
+  const sw = (k, label, cls = '') => `<label class="sw ${cls}"><input type="checkbox" id="tg-${k}" data-tog="${k}"${(k === 'master' ? !S.tog.master : S.tog[k]) ? ' checked' : ''}> ${label}</label>`;
+  let h = `<details class="sec" data-sec="sa"${secOpen('sa', true)}><summary>Sichtanalyse</summary><div class="sec-body">
+    <div class="switches">${sw('lines', 'Sichtlinien')}${sw('cones', 'Sichtfelder')}${sw('occl', 'Sichtbehinderungen')}${sw('dist', 'Entfernungen')}${sw('dirs', 'Blickrichtungen')}${sw('ghosts', 'Frühere Positionen')}${sw('master', 'Alle Sichtmarkierungen ausblenden', 'full')}</div>
+    <label class="lbl" for="occW">Verdeckungsbreite je Person: <span class="mono" id="occWv">${S.width.toFixed(2).replace('.', ',')} m</span></label>
+    <input type="range" id="occW" min="0.3" max="1.6" step="0.05" value="${S.width}" data-pref="width">
+    <div class="row" style="gap:6px"><span class="pill ok">frei</span><span class="pill bad">mögl. verdeckt</span><span class="pill warn">unklar / grenzwertig</span></div>
+    <p class="disclaimer">Geometrische Näherung in der 2D-Draufsicht. Körperhöhe, Sprünge und Körperausrichtung werden nicht erfasst – das Ergebnis ist keine verbindliche Aussage über die tatsächliche Sicht.</p>
+  </div></details>
+  <details class="sec" data-sec="sel"${secOpen('sel', true)}><summary>Auswahl</summary><div class="sec-body" id="selBox"></div></details>
+  <details class="sec" data-sec="sl"${secOpen('sl', true)}><summary>Sichtlinien</summary><div class="sec-body">
+    <div id="sightList"></div>
+    <div class="row"><select id="slFrom" aria-label="Von">${sourceOptions('SR')}</select><span>→</span><select id="slTo" aria-label="Ziel" style="flex:1">${teamOptions('BALL')}</select><button class="btn small primary" data-act="addSight">Hinzufügen</button></div>
+  </div></details>
+  <details class="sec" data-sec="an"${secOpen('an', true)}><summary>Positionierungsanalyse</summary><div class="sec-body">
+    <div class="row"><span class="lbl">Ziel</span><select id="anT" data-ch="anTarget"><option value="auto"${S.anTarget === 'auto' ? ' selected' : ''}>Automatisch (Ereignis, sonst Ball)</option><option value="EV"${S.anTarget === 'EV' ? ' selected' : ''}>Ereignis</option><option value="BALL"${S.anTarget === 'BALL' ? ' selected' : ''}>Ball</option><option value="sel"${S.anTarget === 'sel' ? ' selected' : ''}>Ausgewählte Person</option></select></div>
+    <label class="sw"><input type="checkbox" id="anL" data-pref="anLines"${S.anLines ? ' checked' : ''}> Analyse-Linien auf dem Feld (gestrichelt)</label>
+    <div class="row"><button class="btn small" data-act="tool" data-tool="event">${sc.hasEv ? 'Ereignis versetzen' : 'Ereignis setzen'}</button>${sc.hasEv ? '<button class="btn small danger" data-act="delEv">Ereignis entfernen</button>' : ''}<button class="btn small" data-act="tool" data-tool="alt">+ SR-Alternative</button></div>
+    <div id="anBox"></div>
+    <p class="disclaimer">Die Tabelle zeigt Entfernung, Blickwinkel und geometrische Sicht. Die nächste Position ist nicht automatisch die beste – die fachliche Beurteilung bleibt beim Schiedsrichter.</p>
+  </div></details>
+  <details class="sec" data-sec="os"${secOpen('os', false)}><summary>Abseitslinie</summary><div class="sec-body">
+    <select id="offSel" data-ch="offside" aria-label="Abseitslinie"><option value="off"${sc.offside === 'off' ? ' selected' : ''}>Aus</option><option value="A"${sc.offside === 'A' ? ' selected' : ''}>Angriff ${esc(S.proj.teams.A.name)} → (Linie in Hälfte B)</option><option value="B"${sc.offside === 'B' ? ' selected' : ''}>← Angriff ${esc(S.proj.teams.B.name)} (Linie in Hälfte A)</option></select>
+    <div id="offBox" class="hint"></div>
+  </div></details>
+  <details class="sec" data-sec="nt"${secOpen('nt', true)}><summary>Notizen zur Szene</summary><div class="sec-body">
+    <div class="qchips">${[['Positionierung','Positionierung: '],['Laufweg','Laufweg: '],['Blickrichtung','Blickrichtung: '],['SR–SRA','Absprache SR–SRA: '],['Zuständigkeit','Zuständigkeit (Einwurf / Abseits / Foul): '],['Sichtanalyse','Erkenntnis Sichtanalyse: ']].map(([l, v]) => `<button class="btn small" data-act="qnote" data-v="${esc(v)}">+ ${l}</button>`).join('')}</div>
+    <textarea id="notes" placeholder="z. B. Bei schnellen Angriffen durch das Zentrum die Diagonale anpassen. SRA 1 hält die Abseitslinie.">${esc(sc.notes)}</textarea>
+    <div class="hint" id="saveState">Wird automatisch gespeichert.</div>
+  </div></details>
+  <details class="sec" data-sec="sc"${secOpen('sc', false)}><summary>Szene</summary><div class="sec-body">
+    <label class="lbl" for="scName">Name</label><input type="text" id="scName" data-in="sceneName" value="${esc(sc.name)}">
+    <div class="row"><button class="btn small" data-act="sceneDup">Duplizieren</button><button class="btn small" data-act="sceneReset">Positionen zurücksetzen</button><button class="btn small" data-act="clearDraw">Zeichnungen löschen</button><button class="btn small danger" data-act="sceneDel">Szene löschen</button></div>
+    <p class="hint">„Duplizieren“ eignet sich, um alternative Positionierungen des Gespanns nebeneinander zu vergleichen (Übersicht).</p>
+  </div></details>`;
+  $('#right').innerHTML = h;
+  renderSel();
+}
+function selLabel(){
+  const sc = curScene(), s = S.sel, p = S.proj; if (!s) return '';
+  if (s.k === 'ent') return entityLabel(p, s.id, true);
+  if (s.k === 'alt'){ const a = sc.alts.find(x => x.id === s.id); return 'SR-Alternative ' + (a ? a.n : ''); }
+  if (s.k === 'sight') return 'Sichtlinie';
+  if (s.k === 'draw'){ const d = sc.drawings.find(x => x.id === s.id); return d ? drawName(d) : ''; }
+  return '';
+}
+function drawName(d){
+  if (d.t === 'arrow') return {run:'Laufweg', pass:'Passweg', flight:'Ballflugbahn', look:'Blickrichtung'}[d.kind] || 'Pfeil';
+  return {free:'Freihandzeichnung', text:'Textfeld', zone:d.kind === 'danger' ? 'Gefahrenzone' : d.kind === 'goal' ? 'Torentscheidungs-Bereich' : 'Bereich', stamp:'Symbol: ' + (STAMPS[d.kind] || {}).name, measure:'Messung'}[d.t] || d.t;
+}
+function colorSelect(cur, id){
+  return `<select id="${id}" data-ch="drawColor">${Object.entries(PALETTE).map(([k, v]) => `<option value="${k}"${(v || null) === (cur || null) ? ' selected' : ''}>${k === 'auto' ? 'Automatisch' : k[0].toUpperCase() + k.slice(1)}</option>`).join('')}</select>`;
+}
+function renderSel(){
+  const box = $('#selBox'); if (!box) return; const sc = curScene(), s = S.sel, p = S.proj;
+  if (!s){ box.innerHTML = `<p class="hint">Person, Ball, Zeichnung oder Sichtlinie auf dem Spielfeld antippen. Ausgewählte Schiedsrichter lassen sich am gelben Griff drehen.<br>Tastatur: Pfeiltasten verschieben, Entf löscht, Strg+Z macht rückgängig, Leertaste startet die Wiedergabe.</p>`; return; }
+  let h = `<div class="row"><b style="font-size:14.5px">${esc(selLabel())}</b></div><div id="selLive" class="hint mono"></div>`;
+  if (s.k === 'ent'){
+    const id = s.id, locked = !!sc.locked[id];
+    h += `<div class="row"><button class="btn small" data-act="lock" data-id="${id}">${locked ? ICON.lock + ' Entsperren' : ICON.unlock + ' Sperren'}</button>
+      <button class="btn small" data-act="copyPos">Position kopieren</button><button class="btn small" data-act="pastePos"${S.clip ? '' : ' disabled'}>Einfügen</button>
+      <button class="btn small" data-act="resetPos">Zurücksetzen</button></div>`;
+    if (OFFS.includes(id)){
+      const of = sc.offi[id]; const d = Math.round(((S.lastPos && S.lastPos[id] ? S.lastPos[id].d : 0) % 360 + 540) % 360 - 180);
+      h += `<label class="sw"><input type="checkbox" id="trk" data-ch="track"${of.track ? ' checked' : ''}> Blick folgt dem Ball</label>
+        <label class="lbl" for="inDir">Blickrichtung <span class="mono" id="inDirV">${d}°</span></label><input type="range" id="inDir" min="-180" max="180" step="1" value="${d}" data-in="dir"${of.track ? ' disabled' : ''}>
+        <label class="lbl" for="inFov">Öffnungswinkel <span class="mono" id="inFovV">${of.fov}°</span></label><input type="range" id="inFov" min="20" max="360" step="5" value="${of.fov}" data-in="fov">
+        <label class="lbl" for="inRng">Reichweite Sichtkegel <span class="mono" id="inRngV">${of.range} m</span></label><input type="range" id="inRng" min="10" max="80" step="1" value="${of.range}" data-in="range">
+        <div class="row"><span class="lbl">Sichtlinie zu</span><select id="selSightTo" style="flex:1">${teamOptions(sc.hasEv ? 'EV' : 'BALL')}</select><button class="btn small primary" data-act="addSightSel">+</button></div>`;
+    } else if (id === 'EV'){
+      h += `<button class="btn small danger" data-act="delEv">Ereignis entfernen</button>`;
+    } else if (teamOf(id)){
+      h += `<p class="hint">Name und Rückennummer in der Kaderliste links bearbeiten.</p>`;
+    }
+  } else if (s.k === 'alt'){
+    h += `<div class="row"><span class="lbl">Sichtlinie zu</span><select id="selSightTo" style="flex:1">${teamOptions(sc.hasEv ? 'EV' : 'BALL')}</select><button class="btn small primary" data-act="addSightSel">+</button></div>
+      <button class="btn small danger" data-act="delSel">SR-Alternative entfernen</button>`;
+  } else if (s.k === 'sight'){
+    const sg = sc.sights.find(x => x.id === s.id); if (!sg){ box.innerHTML = ''; return; }
+    h += `<div class="row"><select id="sgFrom" data-ch="sgFrom">${sourceOptions(sg.from)}</select><span>→</span><select id="sgTo" data-ch="sgTo" style="flex:1">${sg.to ? '' : '<option value="" selected>Punkt auf dem Feld</option>'}${teamOptions(sg.to, {alts:true})}</select></div>
+      <div class="row"><label class="sw"><input type="checkbox" id="sgOn" data-ch="sgOn"${sg.on ? ' checked' : ''}> eingeblendet</label><button class="btn small danger" data-act="delSel">Löschen</button></div>`;
+  } else if (s.k === 'draw'){
+    const d = sc.drawings.find(x => x.id === s.id); if (!d){ box.innerHTML = ''; return; }
+    if (d.t === 'arrow'){
+      h += `<div class="row"><select id="dKind" data-ch="dKind">${[['run','Laufweg'],['pass','Passweg'],['flight','Ballflugbahn'],['look','Blickrichtung']].map(([k, l]) => `<option value="${k}"${d.kind === k ? ' selected' : ''}>${l}</option>`).join('')}</select>${colorSelect(d.color, 'dCol')}</div>
+        <div class="row"><label class="sw"><input type="checkbox" id="dDash" data-ch="dDash"${d.dash ? ' checked' : ''}> gestrichelt (Alternative)</label><label class="sw"><input type="checkbox" id="dCurve" data-ch="dCurve"${d.curve ? ' checked' : ''}> geschwungen</label></div>
+        <div class="row"><span class="lbl">Gehört zu</span><select id="dOwner" data-ch="dOwner" style="flex:1">${teamOptions(d.owner || '', {none:true})}</select></div>
+        <div class="row"><span class="lbl">Ablauf</span><select id="dStep" data-ch="dStep">${curScene().frames.map((_, i) => `<option value="${i}"${d.step === i ? ' selected' : ''}>Schritt ${i + 1} → ${i + 2}</option>`).join('')}</select></div>
+        <p class="hint">Verknüpfte Laufwege bestimmen in der Animation die Bahn der Person zwischen zwei Schritten. „Schritt aus Laufwegen“ (unter dem Feld) setzt die Zielpositionen automatisch.</p>`;
+    } else if (d.t === 'text'){
+      h += `<input type="text" id="dText" data-in="dText" value="${esc(d.text)}" aria-label="Text"><div class="row">${colorSelect(d.color, 'dCol')}<label class="lbl" for="dSize">Größe</label><input type="range" id="dSize" min="0.8" max="4" step="0.1" value="${d.size || 1.6}" data-in="dSize" style="width:120px"></div>`;
+    } else if (d.t === 'zone'){
+      h += `<div class="row"><select id="dZk" data-ch="dZone"><option value="area"${d.kind === 'area' ? ' selected' : ''}>Bereich</option><option value="danger"${d.kind === 'danger' ? ' selected' : ''}>Gefahren- / Foulzone</option><option value="goal"${d.kind === 'goal' ? ' selected' : ''}>Torentscheidung</option></select>${colorSelect(d.color, 'dCol')}</div>` +
+        (d.shape === 'circle' ? `<div class="hint mono">Radius ${fmtM(d.r)}</div><div class="row"><button class="btn small" data-act="r915">Radius 9,15 m</button></div>` : `<div class="hint mono">${fmtM(Math.abs(d.w))} × ${fmtM(Math.abs(d.h))}</div>`);
+    } else if (d.t === 'stamp'){
+      h += `<select id="dSt" data-ch="dStamp">${Object.entries(STAMPS).map(([k, v]) => `<option value="${k}"${d.kind === k ? ' selected' : ''}>${v.name}</option>`).join('')}</select>`;
+    } else if (d.t === 'free'){
+      h += `<div class="row">${colorSelect(d.color, 'dCol')}</div>`;
+    }
+    h += `<div class="row"><button class="btn small" data-act="lockDraw">${d.locked ? ICON.lock + ' Entsperren' : ICON.unlock + ' Sperren'}</button><button class="btn small danger" data-act="delSel">Löschen</button></div>`;
+  }
+  box.innerHTML = h;
+}
+function analysisRows(sc, t, pos){
+  pos = pos || posAt(sc, t); const tgtId = anTargetFor(sc); const tgt = pos[tgtId]; const rows = [];
+  [...OFFS, ...sc.alts.map(a => 'ALT:' + a.id)].forEach(k => {
+    const src = pos[k]; if (!src || !tgt) return;
+    const d = dist(src, tgt); const res = k === tgtId ? {status:'clear', blockers:[], unclear:[]} : sightCheck(pos, src, tgt, [k, tgtId], S.width);
+    const of = k.startsWith('ALT:') ? null : sc.offi[k];
+    const off = of ? Math.abs(angDiff(src.d || 0, angTo(src, tgt))) : null;
+    rows.push({k, label:entityLabel(S.proj, k), d, status:res.status, blockers:res.blockers, unclear:res.unclear,
+      inCone:of ? (off <= of.fov / 2 && d <= of.range) : null, angle:off, run:k.startsWith('ALT:') ? null : pathLen(sc, k, t)});
+  });
+  return {tgtId, rows};
+}
+function renderLive(){
+  const sc = curScene(), p = S.proj, pos = S.lastPos; if (!pos) return;
+  // Auswahl live
+  const sl = $('#selLive');
+  if (sl && S.sel){
+    let pp = null; if (S.sel.k === 'ent') pp = pos[S.sel.id]; if (S.sel.k === 'alt') pp = pos['ALT:' + S.sel.id];
+    if (pp){ let txt = `x ${pp.x.toFixed(1).replace('.', ',')} m · y ${pp.y.toFixed(1).replace('.', ',')} m`; if (S.sel.id !== 'BALL') txt += ` · zum Ball ${fmtM(dist(pp, pos.BALL))}`; sl.textContent = txt; }
+    else if (S.sel.k === 'sight'){ const st = S.lastStat[S.sel.id]; sl.textContent = st ? `Länge ${fmtM(st.len)} · ${STATUS_TXT[st.status]}` : ''; }
+    else if (S.sel.k === 'draw'){ const d = sc.drawings.find(x => x.id === S.sel.id); if (d && d.t === 'measure') sl.textContent = 'Abstand ' + fmtM(dist(mPt(d.a, pos), mPt(d.b, pos))); else if (d && d.t === 'arrow') sl.textContent = 'Länge ' + fmtM(dist(d.p0, d.p1)) + (d.owner ? ' · ' + entityLabel(p, d.owner) : ''); else sl.textContent = ''; }
+    if (S.sel.k === 'ent' && OFFS.includes(S.sel.id)){
+      const dEl = $('#inDir'), dv = $('#inDirV'); const dd = Math.round(((pos[S.sel.id].d || 0) % 360 + 540) % 360 - 180);
+      if (dEl && document.activeElement !== dEl) dEl.value = dd; if (dv) dv.textContent = dd + '°';
+    }
+  }
+  // Sichtlinienliste
+  const list = $('#sightList');
+  if (list){
+    list.innerHTML = sc.sights.length ? sc.sights.map(sg => {
+      const st = S.lastStat[sg.id] || {status:'unclear', len:0, blockers:[]};
+      const pillC = st.status === 'clear' ? 'ok' : st.status === 'blocked' ? 'bad' : 'warn';
+      const tgtL = sg.to ? entityLabel(p, sg.to) : 'Punkt';
+      const why = st.blockers && st.blockers.length ? ' – ' + st.blockers.map(b => entityLabel(p, b)).join(', ') : '';
+      return `<div class="sl${S.sel && S.sel.k === 'sight' && S.sel.id === sg.id ? ' sel' : ''}"><span class="c" style="background:${sightColor(p, sg.from)}"></span>
+        <span class="nm" data-act="selSight" data-id="${sg.id}" title="Auswählen">${esc(entityLabel(p, sg.from))} → ${esc(tgtL)} <span class="hint mono">${fmtM(st.len)}</span></span>
+        <span class="pill ${pillC}" title="${esc(STATUS_TXT[st.status] + why)}">${STATUS_TXT[st.status]}</span>
+        <input type="checkbox" data-ch="sgOnList" data-id="${sg.id}"${sg.on ? ' checked' : ''} aria-label="ein-/ausblenden">
+        <button class="lockbtn" data-act="delSight" data-id="${sg.id}" aria-label="Sichtlinie löschen">✕</button></div>`;
+    }).join('') : '<p class="hint">Noch keine Sichtlinien. Werkzeug „Sichtlinie“ nutzen oder unten hinzufügen.</p>';
+  }
+  // Analyse
+  const an = $('#anBox');
+  if (an){
+    const {tgtId, rows} = analysisRows(sc, S.t, pos);
+    an.innerHTML = `<div class="hint">Ziel: <b>${esc(entityLabel(p, tgtId))}</b>${!sc.hasEv && S.anTarget !== 'BALL' ? ' (kein Ereignis gesetzt)' : ''}</div>
+      <table class="an"><thead><tr><th></th><th style="text-align:right">Abst.</th><th>Kegel</th><th>Sicht</th></tr></thead><tbody>` +
+      rows.map(r => `<tr><td><b>${esc(r.label)}</b>${r.run !== null ? `<div class="hint mono">Lauf ${fmtM(r.run)}</div>` : ''}</td><td class="num">${fmtM(r.d)}</td>
+        <td>${r.inCone === null ? '–' : r.inCone ? '<span class="pill ok">im Kegel</span>' : `<span class="pill warn">außerhalb</span>`}${r.angle !== null ? `<div class="hint mono">${Math.round(r.angle)}° zur Blickr.</div>` : ''}</td>
+        <td><span class="pill ${r.status === 'clear' ? 'ok' : r.status === 'blocked' ? 'bad' : 'warn'}">${STATUS_TXT[r.status]}</span>${r.blockers.length ? `<div class="hint">durch ${r.blockers.map(b => esc(entityLabel(p, b))).join(', ')}</div>` : r.unclear.length ? `<div class="hint">knapp an ${r.unclear.map(b => esc(entityLabel(p, b))).join(', ')}</div>` : ''}</td></tr>`).join('') + '</tbody></table>';
+  }
+  // Abseits
+  const ob = $('#offBox');
+  if (ob){
+    if (sc.offside === 'off') ob.textContent = 'Abseitslinie ausgeblendet. Linie verläuft durch den vorletzten Abwehrspieler bzw. den Ball (nie über die Mittellinie hinaus).';
+    else {
+      const line = offLine(pos, sc.offside), ar = sc.offside === 'A' ? 'SRA1' : 'SRA2', dx = pos[ar].x - line;
+      const offP = offsidePlayers(pos, sc.offside, line);
+      ob.innerHTML = `Linie bei <b class="mono">x ${line.toFixed(2).replace('.', ',')} m</b><br>${OFF_LABEL[ar]} steht <b class="mono">${Math.abs(dx) < 0.25 ? 'auf Höhe' : (Math.abs(dx).toFixed(1).replace('.', ',') + ' m ' + ((dx > 0) === (sc.offside === 'A') ? 'torseitig' : 'feldseitig'))}</b> der Linie.<br>` +
+        (offP.length ? `In Abseitsposition: <b>${offP.map(k => esc(entityLabel(p, k)) + ` (${Math.abs(pos[k].x - line).toFixed(2).replace('.', ',')} m)`).join(', ')}</b>` : 'Kein Angreifer in Abseitsposition.');
+    }
+  }
+  // Auswahl in Kaderliste
+  document.querySelectorAll('.prow').forEach(r => r.classList.toggle('sel', !!(S.sel && S.sel.k === 'ent' && S.sel.id === r.dataset.id)));
+  updateTimeline();
+}
+
+/* ===================== Werkzeugleiste & Zeitleiste ===================== */
+function renderToolbar(){
+  let h = '<div class="tgroup">' + TOOLS.slice(0, 1).map(tb).join('') + '</div>';
+  h += '<div class="tgroup">' + TOOLS.slice(1, 5).map(tb).join('') + `<select class="tsel" id="runStyle" data-ch="runStyle" title="Stil für Laufwege"><option value="solid">durchgezogen</option><option value="dash">gestrichelt</option><option value="curve">geschwungen</option></select></div>`;
+  h += '<div class="tgroup">' + TOOLS.slice(5, 11).map(tb).join('') + `<select class="tsel" id="stampSel" data-ch="stamp" title="Symbol">${Object.entries(STAMPS).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join('')}</select>` +
+    `<select class="tsel" id="drawCol" data-ch="newColor" title="Farbe neuer Zeichnungen">${Object.keys(PALETTE).map(k => `<option value="${k}">${k === 'auto' ? 'Farbe: auto' : k}</option>`).join('')}</select></div>`;
+  h += '<div class="tgroup">' + TOOLS.slice(11).map(tb).join('') + '</div>';
+  h += `<div class="tgroup"><button class="tbtn" data-act="view" data-v="full" title="Gesamtes Feld">${viewIcon(0, 0, 18, 12)}<span>Gesamt</span></button>
+    <button class="tbtn" data-act="view" data-v="halfL" title="Linke Hälfte">${viewIcon(0, 0, 9, 12)}<span>Hälfte ◀</span></button>
+    <button class="tbtn" data-act="view" data-v="halfR" title="Rechte Hälfte">${viewIcon(9, 0, 9, 12)}<span>Hälfte ▶</span></button>
+    <button class="tbtn" data-act="view" data-v="boxL" title="Strafraum links">${viewIcon(0, 3, 4, 6)}<span>Strafr. ◀</span></button>
+    <button class="tbtn" data-act="view" data-v="boxR" title="Strafraum rechts">${viewIcon(14, 3, 4, 6)}<span>Strafr. ▶</span></button>
+    <button class="tbtn" data-act="orientToggle" title="Quer- / Hochformat"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="6" width="11" height="8" rx="1"/><rect x="11" y="3" width="7" height="12" rx="1" stroke-dasharray="1.6 1.2"/></svg><span>Drehen</span></button></div>`;
+  $('#toolbar').innerHTML = h;
+  function tb([k, l, title]){ return `<button class="tbtn" data-act="tool" data-tool="${k}" title="${esc(title)}" aria-label="${esc(title)}">${ICON[k]}<span>${l}</span></button>`; }
+  function viewIcon(x, y, w, h){ return `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1" y="4" width="18" height="12" rx="1"/><line x1="10" y1="4" x2="10" y2="16"/><rect x="${1 + x}" y="${4 + y}" width="${w}" height="${h}" fill="currentColor" fill-opacity=".3" stroke="none"/></svg>`; }
+  updateToolbar();
+}
+function updateToolbar(){
+  document.querySelectorAll('.tbtn[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === S.tool));
+  const rs = $('#runStyle'); if (rs) rs.value = S.runStyle; const st = $('#stampSel'); if (st) st.value = S.stamp; const dc = $('#drawCol'); if (dc) dc.value = S.drawColor;
+  hud(S.pending ? `Sichtlinie von ${entityLabel(S.proj, S.pending.from)}: jetzt Ziel antippen (Esc bricht ab).` : TOOL_HINT[S.tool]);
+  svg.style.cursor = S.tool === 'select' ? '' : 'crosshair';
+}
+let tlSig = '';
+function updateTimeline(){
+  const sc = curScene(), n = sc.frames.length, cur = fi(), tl = $('#timeline');
+  const sig = n + '|' + S.playing + '|' + S.speed + '|' + S.proj.cur + '|' + S.playAll;
+  if (sig !== tlSig){
+    tlSig = sig;
+    tl.innerHTML = `<button class="btn icon" data-act="tlFirst" aria-label="Zum Anfang" title="Zum Anfang">⏮</button>
+      <button class="btn icon" data-act="tlPrev" aria-label="Schritt zurück" title="Schritt zurück">◀</button>
+      <button class="btn primary" data-act="tlPlay" style="min-width:94px">${S.playing ? '❚❚ Pause' : '▶ Abspielen'}</button>
+      <button class="btn icon" data-act="tlNext" aria-label="Schritt vor" title="Schritt vor">▶</button>
+      <span class="lbl">Schritt</span><div class="chips" id="chips">${sc.frames.map((_, i) => `<button class="chip" data-act="chip" data-i="${i}">${i + 1}</button>`).join('')}</div>
+      <button class="btn small" data-act="frameAdd" title="Aktuelle Positionen als neuen Schritt anhängen">+ Schritt</button>
+      <button class="btn small" data-act="frameDel"${n < 2 ? ' disabled' : ''} title="Aktuellen Schritt löschen">− Schritt</button>
+      <button class="btn small" data-act="frameRuns" title="Endpunkte der verknüpften Laufwege als nächsten Schritt übernehmen">Schritt aus Laufwegen</button>
+      <select id="speed" data-ch="speed" aria-label="Geschwindigkeit">${[0.25, 0.5, 1, 1.5, 2].map(v => `<option value="${v}"${v === S.speed ? ' selected' : ''}>${String(v).replace('.', ',')}×</option>`).join('')}</select>
+      <input type="range" id="scrub" min="0" max="${Math.max(0, n - 1)}" step="0.01" value="${S.t}" aria-label="Zeitleiste"${n < 2 ? ' disabled' : ''}>`;
+  }
+  tl.querySelectorAll('.chip').forEach((c, i) => c.classList.toggle('on', S.playing ? i === Math.min(n - 1, Math.floor(S.t + 1e-6)) : i === cur));
+  const sc2 = $('#scrub'); if (sc2 && document.activeElement !== sc2) sc2.value = S.t;
+}
+function renderHeader(){
+  $('#projName').textContent = S.proj.name;
+  $('#sceneSel').innerHTML = S.proj.scenes.map((s, i) => `<option value="${i}"${i === S.proj.cur ? ' selected' : ''}>${i + 1}. ${esc(s.name)}</option>`).join('');
+  updUndo();
+}
+function renderPanels(){ renderHeader(); renderLeft(); renderRight(); updateToolbar(); tlSig = ''; }
+function renderAll(){ renderPanels(); draw(); }
+
+/* ===================== Szenen & Schritte ===================== */
+function switchScene(i, fromPlay){
+  curScene().at = fi(); S.proj.cur = clamp(i, 0, S.proj.scenes.length - 1);
+  S.t = fromPlay ? 0 : (curScene().at || 0); S.sel = null; S.pending = null; S.hold = 0; save(); renderPanels(); draw();
+}
+function setPos(id, x, y){
+  const sc = curScene(); if (S.t !== Math.round(S.t)) S.t = fi();
+  const nx = r2(clamp(x, -6, L + 6)), ny = r2(clamp(y, -6, W + 6));
+  if (id === 'EV'){ sc.frames.forEach(f => { f.EV = {x:nx, y:ny}; }); return; }
+  const f = sc.frames[fi()]; f[id] = {...f[id], x:nx, y:ny};
+}
+function addFrame(){
+  mutate(() => { const sc = curScene(), i = fi(); sc.frames.splice(i + 1, 0, clone(sc.frames[i])); sc.drawings.forEach(d => { if (d.t === 'arrow' && d.step > i) d.step++; }); S.t = i + 1; }, false);
+  tlSig = ''; toast('Neuer Schritt angelegt – jetzt Personen verschieben.');
+}
+function delFrame(){
+  const sc = curScene(); if (sc.frames.length < 2) return;
+  mutate(() => { const i = fi(); sc.frames.splice(i, 1); sc.drawings.forEach(d => { if (d.t === 'arrow' && typeof d.step === 'number'){ if (d.step >= sc.frames.length) d.step = sc.frames.length - 1; else if (d.step > i) d.step--; } }); S.t = clamp(i - 1, 0, sc.frames.length - 1); }, false);
+  tlSig = '';
+}
+function framesFromRuns(){
+  const sc = curScene(), i = fi(); const arr = sc.drawings.filter(d => d.t === 'arrow' && d.owner && d.step === i);
+  if (!arr.length){ toast(`Keine verknüpften Laufwege für Schritt ${i + 1}. Laufwege auf einer Person beginnen lassen.`); return; }
+  mutate(() => {
+    if (i + 1 >= sc.frames.length) sc.frames.push(clone(sc.frames[i]));
+    const nf = sc.frames[i + 1]; arr.forEach(d => { nf[d.owner] = {...nf[d.owner], x:r2(d.p1.x), y:r2(d.p1.y)}; });
+    S.t = i + 1;
+  }, false);
+  tlSig = ''; toast(`${arr.length} Laufweg(e) in Schritt ${i + 2} übernommen.`);
+}
+let lastTs = 0;
+function tick(ts){
+  if (!S.playing) return; const dt = lastTs ? Math.min(0.1, (ts - lastTs) / 1000) : 0; lastTs = ts;
+  const sc = curScene(), n = sc.frames.length;
+  if (n < 2){ S.hold += dt; if (S.hold > 2.2) nextOrStop(); }
+  else { S.t += dt * S.speed / 1.6; if (S.t >= n - 1){ S.t = n - 1; S.hold += dt; if (S.hold > 0.9 || !S.playAll) nextOrStop(); } }
+  drawNow(); if (S.playing) requestAnimationFrame(tick);
+}
+function nextOrStop(){
+  if (S.playAll && S.proj.cur < S.proj.scenes.length - 1){ switchScene(S.proj.cur + 1, true); }
+  else { S.playing = false; S.playAll = false; S.hold = 0; tlSig = ''; renderSel(); draw(); }
+}
+function play(){
+  const n = curScene().frames.length;
+  if (n < 2 && !S.playAll){ toast('Diese Szene hat nur einen Schritt. Mit „+ Schritt“ weitere Positionen anlegen.'); return; }
+  if (S.t >= n - 1 - 1e-6 && !S.playAll) S.t = 0;
+  S.playing = true; S.hold = 0; lastTs = 0; S.sel = S.sel && S.sel.k === 'ent' ? S.sel : null; tlSig = ''; requestAnimationFrame(tick); updateTimeline();
+}
+function pause(){ S.playing = false; S.playAll = false; tlSig = ''; draw(); }
+
+/* ===================== Zeiger-Interaktion ===================== */
+const pointers = new Map(); let pinch = null;
+function nearestEnt(p, maxD, pool){
+  const pos = S.lastPos || posAt(curScene(), S.t); let best = null, bd = maxD;
+  (pool || [...PERSONS, 'BALL']).forEach(k => { const q = pos[k]; if (!q) return; const d = dist(p, q); if (d < bd){ bd = d; best = k; } });
+  if (curScene().hasEv && (!pool || pool.includes('EV'))){ const d = dist(p, pos.EV); if (d < bd) best = 'EV'; }
+  return best;
+}
+function hitInfo(e){
+  const el = e.target instanceof Element ? e.target : null; if (!el) return {};
+  const g = s => { const x = el.closest('[' + s + ']'); return x ? x.getAttribute(s) : null; };
+  return {h:g('data-h'), ent:g('data-ent'), alt:g('data-alt'), draw:g('data-draw'), sight:g('data-sight')};
+}
+function select(sel){ S.sel = sel; renderSel(); draw(); }
+function snapForDrag(){ return snap(); }
+function onDown(e){
+  if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 1) return;
+  e.preventDefault(); try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+  pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if (pointers.size === 2){
+    S.drag = null; S.draft = null; const [a, b] = [...pointers.values()];
+    pinch = {d:Math.hypot(a.x - b.x, a.y - b.y), view:{...S.view}, mid:svgPt((a.x + b.x) / 2, (a.y + b.y) / 2)}; draw(); return;
+  }
+  if (pointers.size > 2) return;
+  const sc = curScene(); const p = fieldPt(e); const hi = hitInfo(e);
+  if (e.button === 1){ startPan(e); return; }
+  if (S.playing && S.tool !== 'select') pause();
+  const pos = S.lastPos || posAt(sc, S.t);
+  switch (S.tool){
+    case 'select': {
+      if (hi.h && !S.playing){ startHandle(hi.h, p); return; }
+      if (hi.ent){
+        if (S.sel && S.sel.k === 'ent' && S.sel.id === hi.ent){} else select({k:'ent', id:hi.ent});
+        if (S.playing) return;
+        if (sc.locked[hi.ent]){ toast(`${entityLabel(S.proj, hi.ent)} ist gesperrt.`); return; }
+        const q = pos[hi.ent]; S.drag = {k:'ent', id:hi.ent, dx:q.x - p.x, dy:q.y - p.y, snap:snapForDrag(), moved:false}; return;
+      }
+      if (hi.alt){ select({k:'alt', id:hi.alt}); const a = sc.alts.find(x => x.id === hi.alt); S.drag = {k:'alt', id:hi.alt, dx:a.x - p.x, dy:a.y - p.y, snap:snapForDrag(), moved:false}; return; }
+      if (hi.draw){ select({k:'draw', id:hi.draw}); const d = sc.drawings.find(x => x.id === hi.draw); if (d && !d.locked && !S.playing) S.drag = {k:'move', id:hi.draw, last:p, snap:snapForDrag(), moved:false}; return; }
+      if (hi.sight){ select({k:'sight', id:hi.sight}); return; }
+      if (S.sel) select(null);
+      startPan(e); return;
+    }
+    case 'run': case 'pass': case 'flight': case 'look': {
+      let start = p, owner = null;
+      if (hi.ent && hi.ent !== 'EV'){ owner = hi.ent; start = {...pos[hi.ent]}; }
+      else { const pool = S.tool === 'pass' || S.tool === 'flight' ? ['BALL', ...PERSONS] : [...PERSONS, 'BALL']; const n = nearestEnt(p, S.tool === 'look' ? 0 : 2.2, pool); if (n && n !== 'EV'){ owner = n; start = {...pos[n]}; } }
+      if ((S.tool === 'pass' || S.tool === 'flight') && owner && owner !== 'BALL' && dist(pos[owner], pos.BALL) < 2.5){ owner = 'BALL'; start = {...pos.BALL}; }
+      const kind = S.tool, curve = S.tool === 'flight' || (S.tool === 'run' && S.runStyle === 'curve');
+      S.draft = {id:'draft', t:'arrow', kind, dash:S.tool === 'run' && S.runStyle === 'dash', curve, p0:{x:r2(start.x), y:r2(start.y)}, p1:{...start}, c:{...start},
+        color:PALETTE[S.drawColor] || null, owner:S.tool === 'look' ? null : owner, step:fi()};
+      S.drag = {k:'draft'}; draw(); return;
+    }
+    case 'free': S.draft = {id:'draft', t:'free', pts:[[r2(p.x), r2(p.y)]], color:PALETTE[S.drawColor] || null}; S.drag = {k:'draft'}; return;
+    case 'zone': case 'danger': S.draft = {id:'draft', t:'zone', shape:'rect', kind:S.tool === 'danger' ? 'danger' : 'area', x:r2(p.x), y:r2(p.y), w:0, h:0, ox:p.x, oy:p.y, color:PALETTE[S.drawColor] || null}; S.drag = {k:'draft'}; return;
+    case 'circle': S.draft = {id:'draft', t:'zone', shape:'circle', kind:'area', cx:r2(p.x), cy:r2(p.y), r:0, color:PALETTE[S.drawColor] || null}; S.drag = {k:'draft'}; return;
+    case 'measure': {
+      const n = nearestEnt(p, 1.8); const a = n ? {x:pos[n].x, y:pos[n].y, ref:n} : {x:r2(p.x), y:r2(p.y)};
+      S.draft = {id:'draft', t:'measure', a, b:{x:p.x, y:p.y}}; S.drag = {k:'draft'}; draw(); return;
+    }
+    case 'text': {
+      const d = {id:uid(), t:'text', x:r2(p.x), y:r2(p.y), text:'Kommentar', color:PALETTE[S.drawColor] || null, size:1.6};
+      mutate(() => { sc.drawings.push(d); S.sel = {k:'draw', id:d.id}; }); setTool('select');
+      setTimeout(() => { const i = $('#dText'); if (i){ openDrawerFor('right'); i.focus(); i.select(); } }, 60); return;
+    }
+    case 'stamp': { const d = {id:uid(), t:'stamp', kind:S.stamp, x:r2(p.x), y:r2(p.y)}; mutate(() => { sc.drawings.push(d); S.sel = {k:'draw', id:d.id}; }); return; }
+    case 'event': mutate(() => { sc.frames.forEach(f => { f.EV = {x:r2(p.x), y:r2(p.y)}; }); sc.hasEv = true; S.sel = {k:'ent', id:'EV'}; }); setTool('select'); toast('Ereignis gesetzt – Analyse rechts unter „Positionierungsanalyse“.'); return;
+    case 'alt': {
+      if (sc.alts.length >= 4){ toast('Maximal 4 SR-Alternativen je Szene.'); return; }
+      const n = [1, 2, 3, 4].find(k => !sc.alts.some(a => a.n === k)); const a = {id:uid(), x:r2(p.x), y:r2(p.y), n};
+      mutate(() => { sc.alts.push(a); S.sel = {k:'alt', id:a.id}; }); setTool('select'); return;
+    }
+    case 'sight': {
+      if (!S.pending){
+        const src = hi.alt ? 'ALT:' + hi.alt : (hi.ent && OFFS.includes(hi.ent) ? hi.ent : nearestEnt(p, 2.5, OFFS));
+        if (!src){ toast('Zuerst SR, SRA 1, SRA 2 oder eine SR-Alternative antippen.'); return; }
+        S.pending = {from:src}; S.hover = p; updateToolbar(); draw(); return;
+      }
+      let to = hi.alt ? 'ALT:' + hi.alt : hi.ent || null; let pt = null;
+      if (!to){ const n = nearestEnt(p, 1.6); if (n) to = n; else pt = {x:r2(p.x), y:r2(p.y)}; }
+      if (to === S.pending.from){ toast('Ziel muss sich von der Quelle unterscheiden.'); return; }
+      const sg = {id:uid(), from:S.pending.from, to, pt, on:true}; S.pending = null;
+      mutate(() => { sc.sights.push(sg); S.sel = {k:'sight', id:sg.id}; }); updateToolbar(); return;
+    }
+  }
+}
+function startPan(e){ S.drag = {k:'pan', sx:e.clientX, sy:e.clientY, v0:{...S.view}}; }
+function startHandle(h, p){
+  const [kind, id, key] = h.split(':');
+  if (kind === 'rot'){ S.drag = {k:'rot', id, snap:snapForDrag(), moved:false}; return; }
+  if (kind === 'dp'){ S.drag = {k:'dp', id, key, snap:snapForDrag(), moved:false}; }
+  void p;
+}
+function firstMove(){ if (S.drag && !S.drag.moved){ S.drag.moved = true; pushUndo(S.drag.snap); } }
+function onMove(e){
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if (pinch && pointers.size === 2){
+    const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (d < 5) return;
+    const f = pinch.d / d; const v0 = pinch.view; const nw = clamp(v0.w * f, 8, 170); const ff = nw / v0.w;
+    S.view = {x:pinch.mid.x - (pinch.mid.x - v0.x) * ff, y:pinch.mid.y - (pinch.mid.y - v0.y) * ff, w:v0.w * ff, h:v0.h * ff}; draw(); return;
+  }
+  const p = fieldPt(e);
+  if (S.pending){ S.hover = p; if (!S.drag) draw(); }
+  const dr = S.drag; if (!dr) return;
+  const sc = curScene();
+  if (dr.k === 'pan'){
+    const rect = svg.getBoundingClientRect(); const s = Math.min(rect.width / dr.v0.w, rect.height / dr.v0.h);
+    S.view = {...dr.v0, x:dr.v0.x - (e.clientX - dr.sx) / s, y:dr.v0.y - (e.clientY - dr.sy) / s}; draw(); return;
+  }
+  if (dr.k === 'ent'){ firstMove(); setPos(dr.id, p.x + dr.dx, p.y + dr.dy); draw(); return; }
+  if (dr.k === 'alt'){ firstMove(); const a = sc.alts.find(x => x.id === dr.id); a.x = r2(p.x + dr.dx); a.y = r2(p.y + dr.dy); draw(); return; }
+  if (dr.k === 'rot'){
+    firstMove(); const pos = S.lastPos; const q = pos[dr.id]; const d = r2(angTo(q, p));
+    sc.offi[dr.id].track = false; const f = sc.frames[fi()]; f[dr.id] = {...f[dr.id], d};
+    const tr = $('#trk'); if (tr) tr.checked = false; const ds = $('#inDir'); if (ds) ds.disabled = false; draw(); return;
+  }
+  if (dr.k === 'move'){
+    firstMove(); const d = sc.drawings.find(x => x.id === dr.id); const dx = p.x - dr.last.x, dy = p.y - dr.last.y; dr.last = p; moveDrawing(d, dx, dy); draw(); return;
+  }
+  if (dr.k === 'dp'){
+    firstMove(); const d = sc.drawings.find(x => x.id === dr.id); if (!d) return;
+    const pt = {x:r2(p.x), y:r2(p.y)};
+    if (d.t === 'arrow'){ if (dr.key === 'c') d.c = pt; else { d[dr.key] = pt; if (!d.curve) d.c = midp(d.p0, d.p1); } }
+    if (d.t === 'measure') d[dr.key] = pt;
+    if (d.t === 'zone' && dr.key === 'br'){ d.w = r2(p.x - d.x); d.h = r2(p.y - d.y); }
+    if (d.t === 'zone' && dr.key === 'r') d.r = r2(Math.max(0.5, Math.hypot(p.x - d.cx, p.y - d.cy)));
+    draw(); return;
+  }
+  if (dr.k === 'draft' && S.draft){
+    const d = S.draft;
+    if (d.t === 'arrow'){ d.p1 = {x:r2(p.x), y:r2(p.y)}; d.c = d.curve ? curveCtrl(d.p0, d.p1, d.kind === 'flight' ? 0.18 : 0.22) : midp(d.p0, d.p1); }
+    if (d.t === 'free'){ const last = d.pts[d.pts.length - 1]; if (Math.hypot(p.x - last[0], p.y - last[1]) > 0.35) d.pts.push([r2(p.x), r2(p.y)]); }
+    if (d.t === 'zone' && d.shape === 'rect'){ d.x = r2(Math.min(d.ox, p.x)); d.y = r2(Math.min(d.oy, p.y)); d.w = r2(Math.abs(p.x - d.ox)); d.h = r2(Math.abs(p.y - d.oy)); }
+    if (d.t === 'zone' && d.shape === 'circle') d.r = r2(Math.hypot(p.x - d.cx, p.y - d.cy));
+    if (d.t === 'measure') d.b = {x:r2(p.x), y:r2(p.y)};
+    draw();
+  }
+}
+function moveDrawing(d, dx, dy){
+  const mv = q => { if (q && !q.ref){ q.x = r2(q.x + dx); q.y = r2(q.y + dy); } };
+  if (d.t === 'arrow'){ mv(d.p0); mv(d.p1); mv(d.c); }
+  else if (d.t === 'free') d.pts = d.pts.map(q => [r2(q[0] + dx), r2(q[1] + dy)]);
+  else if (d.t === 'measure'){ mv(d.a); mv(d.b); }
+  else if (d.t === 'zone'){ if (d.shape === 'circle'){ d.cx = r2(d.cx + dx); d.cy = r2(d.cy + dy); } else { d.x = r2(d.x + dx); d.y = r2(d.y + dy); } }
+  else { d.x = r2(d.x + dx); d.y = r2(d.y + dy); }
+}
+function onUp(e){
+  pointers.delete(e.pointerId); if (pinch){ if (pointers.size < 2) pinch = null; return; }
+  const dr = S.drag; S.drag = null; if (!dr) return;
+  const sc = curScene();
+  if (dr.k === 'draft' && S.draft){
+    const d = S.draft; S.draft = null; let ok = false;
+    if (d.t === 'arrow') ok = dist(d.p0, d.p1) > 0.8;
+    if (d.t === 'free') ok = d.pts.length > 2;
+    if (d.t === 'zone') ok = d.shape === 'circle' ? d.r > 0.5 : (d.w > 0.5 && d.h > 0.5);
+    if (d.t === 'measure'){ const pos = S.lastPos; const n = nearestEnt(d.b, 1.8); if (n && n !== d.a.ref) d.b = {x:pos[n].x, y:pos[n].y, ref:n}; ok = dist(mPt(d.a, pos), mPt(d.b, pos)) > 0.3; }
+    if (ok){ delete d.ox; delete d.oy; d.id = uid(); mutate(() => { sc.drawings.push(d); S.sel = {k:'draw', id:d.id}; }); }
+    else draw();
+    return;
+  }
+  if (dr.k === 'dp' && dr.moved){
+    const d = sc.drawings.find(x => x.id === dr.id);
+    if (d && d.t === 'measure'){ const pt = d[dr.key]; const n = nearestEnt(pt, 1.8); if (n){ const q = S.lastPos[n]; d[dr.key] = {x:q.x, y:q.y, ref:n}; } }
+    if (d && d.t === 'zone' && d.shape === 'rect'){ if (d.w < 0){ d.x = r2(d.x + d.w); d.w = -d.w; } if (d.h < 0){ d.y = r2(d.y + d.h); d.h = -d.h; } }
+  }
+  if (dr.moved){ save(); renderSel(); draw(); }
+}
+svg.addEventListener('pointerdown', onDown);
+svg.addEventListener('pointermove', onMove);
+svg.addEventListener('pointerup', onUp);
+svg.addEventListener('pointercancel', onUp);
+svg.addEventListener('pointerleave', () => { if (S.pending && !S.drag){ S.hover = null; draw(); } });
+svg.addEventListener('contextmenu', e => e.preventDefault());
+svg.addEventListener('wheel', e => { e.preventDefault(); zoomAt(svgPt(e.clientX, e.clientY), e.deltaY > 0 ? 1.12 : 1 / 1.12); }, {passive:false});
+
+/* ===================== Aktionen ===================== */
+function setTool(t){ S.tool = t; S.pending = null; S.draft = null; updateToolbar(); draw(); }
+function openDrawerFor(side){ if (window.matchMedia('(max-width:1180px)').matches){ $('#' + side).classList.add('open'); $('#scrim').classList.add('on'); } }
+function closeDrawers(){ $('#left').classList.remove('open'); $('#right').classList.remove('open'); $('#scrim').classList.remove('on'); }
+function deleteSelection(){
+  const sc = curScene(), s = S.sel; if (!s) return;
+  if (s.k === 'draw') mutate(() => { sc.drawings = sc.drawings.filter(d => d.id !== s.id); S.sel = null; });
+  else if (s.k === 'sight') mutate(() => { sc.sights = sc.sights.filter(d => d.id !== s.id); S.sel = null; });
+  else if (s.k === 'alt') mutate(() => { sc.alts = sc.alts.filter(d => d.id !== s.id); sc.sights = sc.sights.filter(g => g.from !== 'ALT:' + s.id && g.to !== 'ALT:' + s.id); S.sel = null; });
+  else if (s.k === 'ent' && s.id === 'EV') ACT.delEv();
+}
+function addSight(from, to){
+  if (!from || !to) return; if (from === to){ toast('Quelle und Ziel sind identisch.'); return; }
+  const sc = curScene(); if (sc.sights.some(g => g.from === from && g.to === to)){ toast('Diese Sichtlinie gibt es bereits.'); return; }
+  const sg = {id:uid(), from, to, pt:null, on:true}; mutate(() => { sc.sights.push(sg); S.sel = {k:'sight', id:sg.id}; });
+}
+const ACT = {
+  drawer(b){ const side = b.dataset.side; const el = $('#' + side); const open = !el.classList.contains('open'); closeDrawers(); if (open){ el.classList.add('open'); $('#scrim').classList.add('on'); } },
+  closeDrawers, undo, redo,
+  zoomIn(){ zoomCenter(1 / 1.25); }, zoomOut(){ zoomCenter(1.25); },
+  tool(b){ setTool(b.dataset.tool); if (b.closest('.side')) closeDrawers(); },
+  view(b){ setView(b.dataset.v); },
+  orient(b){ S.orient = b.dataset.o; savePrefs(); setView('full'); renderLeft(); },
+  orientToggle(){ S.orient = S.orient === 'land' ? 'port' : 'land'; savePrefs(); setView('full'); renderLeft(); },
+  selEnt(b){ const id = b.dataset.id; S.sel = {k:'ent', id}; renderSel(); draw(); },
+  lock(b){ const id = b.dataset.id; mutate(() => { const sc = curScene(); if (sc.locked[id]) delete sc.locked[id]; else sc.locked[id] = true; }); },
+  lockAll(b){ mutate(() => { const sc = curScene(); PLAYERS.forEach(k => { if (b.dataset.v === '1') sc.locked[k] = true; else delete sc.locked[k]; }); }); },
+  lockDraw(){ const d = curScene().drawings.find(x => S.sel && x.id === S.sel.id); if (d) mutate(() => { d.locked = !d.locked; }); },
+  applyForm(b){
+    const t = b.dataset.team; const tm = S.proj.teams[t];
+    mutate(() => { const sc = curScene(); const lay = layoutTeam(t, tm.form, [5, 30, 45, 60], 34); const f = sc.frames[fi()]; Object.entries(lay).forEach(([k, v]) => { if (!sc.locked[k]) f[k] = {x:r2(v.x), y:r2(v.y)}; }); });
+    toast(`Formation ${tm.form} für ${tm.name} geladen (gesperrte Spieler bleiben stehen).`);
+  },
+  tmplNew(){ const k = $('#tmplSel').value; mutate(() => { S.proj.scenes.push(sceneFromTemplate(k)); curScene().at = fi(); S.proj.cur = S.proj.scenes.length - 1; S.t = 0; S.sel = null; }); setView('full'); closeDrawers(); toast('Vorlage als neue Szene geladen.'); },
+  async tmplReplace(){ const k = $('#tmplSel').value; if (!await ask('Szene ersetzen?', `„${curScene().name}“ wird durch die Vorlage ersetzt. Notizen gehen dabei verloren (Rückgängig ist möglich).`, 'Ersetzen')) return;
+    mutate(() => { S.proj.scenes[S.proj.cur] = sceneFromTemplate(k); S.t = 0; S.sel = null; }); closeDrawers(); },
+  newScene(){ mutate(() => { curScene().at = fi(); const s = sceneFromTemplate('anstoss'); s.name = 'Szene ' + (S.proj.scenes.length + 1); s.notes = ''; s.sights = [{id:uid(), from:'SR', to:'BALL', on:true}]; S.proj.scenes.push(s); S.proj.cur = S.proj.scenes.length - 1; S.t = 0; S.sel = null; }); },
+  copyPos(){ const id = S.sel && S.sel.id; if (!id) return; const q = S.lastPos[id]; S.clip = {x:q.x, y:q.y, d:q.d}; toast('Position kopiert.'); renderSel(); },
+  pastePos(){ const id = S.sel && S.sel.id; if (!id || !S.clip) return; if (curScene().locked[id]){ toast('Element ist gesperrt.'); return; } mutate(() => { setPos(id, S.clip.x + (S.clip.from === id ? 0 : 0), S.clip.y); }, false); },
+  resetPos(){ const id = S.sel && S.sel.id; if (!id) return; const sc = curScene(); const o = sc.origin[id]; if (!o) return; mutate(() => { setPos(id, o.x, o.y); }, false); },
+  delSel(){ deleteSelection(); },
+  delEv(){ mutate(() => { const sc = curScene(); sc.hasEv = false; sc.sights = sc.sights.filter(g => g.to !== 'EV'); if (S.sel && S.sel.id === 'EV') S.sel = null; }); },
+  r915(){ const d = curScene().drawings.find(x => S.sel && x.id === S.sel.id); if (d) mutate(() => { d.r = 9.15; }); },
+  addSight(){ addSight($('#slFrom').value, $('#slTo').value); },
+  addSightSel(){ const from = S.sel.k === 'alt' ? 'ALT:' + S.sel.id : S.sel.id; addSight(from, $('#selSightTo').value); },
+  selSight(b){ select({k:'sight', id:b.dataset.id}); },
+  delSight(b){ mutate(() => { const sc = curScene(); sc.sights = sc.sights.filter(g => g.id !== b.dataset.id); if (S.sel && S.sel.id === b.dataset.id) S.sel = null; }); },
+  qnote(b){ const ta = $('#notes'); const sc = curScene(); const pre = ta.value && !ta.value.endsWith('\n') ? '\n' : ''; ta.value += pre + '• ' + b.dataset.v; sc.notes = ta.value; save(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); },
+  sceneDup(){ mutate(() => { curScene().at = fi(); const c = clone(curScene()); c.id = uid(); c.name = c.name + ' (Variante)'; S.proj.scenes.splice(S.proj.cur + 1, 0, c); S.proj.cur++; S.sel = null; }); toast('Szene dupliziert – Variante bearbeiten und in der Übersicht vergleichen.'); },
+  async sceneDel(){ if (S.proj.scenes.length < 2){ toast('Ein Projekt braucht mindestens eine Szene.'); return; } if (!await ask('Szene löschen?', `„${curScene().name}“ wird gelöscht (Rückgängig ist möglich).`, 'Löschen')) return;
+    mutate(() => { S.proj.scenes.splice(S.proj.cur, 1); S.proj.cur = clamp(S.proj.cur - 1, 0, S.proj.scenes.length - 1); S.t = curScene().at || 0; S.sel = null; }); },
+  async sceneReset(){ if (!await ask('Positionen zurücksetzen?', 'Alle Personen kehren zur Ausgangsposition zurück, weitere Schritte werden entfernt. Zeichnungen bleiben erhalten.', 'Zurücksetzen')) return;
+    mutate(() => { const sc = curScene(); sc.frames = [clone(sc.origin)]; sc.drawings.forEach(d => { if (d.t === 'arrow') d.step = 0; }); S.t = 0; }); },
+  async clearDraw(){ if (!await ask('Zeichnungen löschen?', 'Alle Pfeile, Zonen, Texte, Symbole und Messungen dieser Szene werden entfernt.', 'Löschen')) return; mutate(() => { curScene().drawings = []; S.sel = null; }); },
+  tlFirst(){ pause(); S.t = 0; draw(); }, tlPrev(){ pause(); S.t = Math.max(0, Math.ceil(S.t - 1e-6) - 1); draw(); },
+  tlNext(){ pause(); S.t = Math.min(curScene().frames.length - 1, Math.floor(S.t + 1e-6) + 1); draw(); },
+  tlPlay(){ if (S.playing) pause(); else play(); },
+  chip(b){ pause(); S.t = +b.dataset.i; renderSel(); draw(); },
+  frameAdd: addFrame, frameDel: delFrame, frameRuns: framesFromRuns,
+  closeModal, projects:openProjects, overview:openOverview, export:openExport,
+};
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+  const f = ACT[b.dataset.act]; if (f){ e.preventDefault(); f(b, e); }
+});
+document.addEventListener('focusin', e => { if (e.target.matches('[data-in]')) S.preEdit = snap(); });
+document.addEventListener('input', e => {
+  const el = e.target; const k = el.dataset.in; const sc = curScene(), p = S.proj;
+  if (el.id === 'notes'){ sc.notes = el.value; save(); return; }
+  if (el.id === 'scrub'){ pause(); S.t = +el.value; draw(); return; }
+  if (el.dataset.pref){ const v = el.type === 'checkbox' ? el.checked : +el.value; S[el.dataset.pref] = v; if (el.id === 'occW') $('#occWv').textContent = (+v).toFixed(2).replace('.', ',') + ' m'; savePrefs(); draw(); return; }
+  if (!k) return;
+  const id = el.dataset.id, t = el.dataset.team;
+  if (k === 'pname'){ p.teams[id[0]].players[+id.slice(1) - 1].name = el.value.slice(0, 40); }
+  else if (k === 'pnum'){ const n = parseInt(el.value, 10); if (isFinite(n)) p.teams[id[0]].players[+id.slice(1) - 1].num = clamp(n, 0, 99); }
+  else if (k === 'teamName') p.teams[t].name = el.value.slice(0, 40);
+  else if (k === 'teamColor') p.teams[t].color = el.value;
+  else if (k === 'teamGk') p.teams[t].gk = el.value;
+  else if (k === 'offColor') p.officials[id].color = el.value;
+  else if (k === 'offSight') p.officials[id].sight = el.value;
+  else if (k === 'sceneName'){ sc.name = el.value.slice(0, 80) || 'Szene'; renderHeader(); }
+  else if (k === 'sceneNameI'){ const s = p.scenes[+el.dataset.i]; s.name = el.value.slice(0, 80) || 'Szene'; renderHeader(); }
+  else if (k === 'projName'){ p.name = el.value.slice(0, 80) || 'Projekt'; $('#projName').textContent = p.name; }
+  else if (k === 'dir'){ const of = sc.offi[S.sel.id]; of.track = false; const f = sc.frames[fi()]; f[S.sel.id] = {...f[S.sel.id], d:+el.value}; $('#inDirV').textContent = el.value + '°'; }
+  else if (k === 'fov'){ sc.offi[S.sel.id].fov = +el.value; $('#inFovV').textContent = el.value + '°'; }
+  else if (k === 'range'){ sc.offi[S.sel.id].range = +el.value; $('#inRngV').textContent = el.value + ' m'; }
+  else if (k === 'dText'){ const d = sc.drawings.find(x => x.id === S.sel.id); if (d) d.text = el.value.slice(0, 120); }
+  else if (k === 'dSize'){ const d = sc.drawings.find(x => x.id === S.sel.id); if (d) d.size = +el.value; }
+  save(); draw();
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.dataset.in){ if (S.preEdit && S.preEdit !== snap()) pushUndo(S.preEdit); S.preEdit = null; if (['teamName','teamColor','teamGk','offColor','offSight','pnum'].includes(el.dataset.in)) { renderLeft(); renderRight(); } return; }
+  if (el.dataset.tog){ const k = el.dataset.tog; if (k === 'master') S.tog.master = !el.checked; else S.tog[k] = el.checked; savePrefs(); draw(); return; }
+  if (el.dataset.pref){ if (el.dataset.pref === 'anLines' || el.dataset.pref === 'showNames' || el.dataset.pref === 'grid'){ S[el.dataset.pref] = el.checked; savePrefs(); draw(); } return; }
+  const k = el.dataset.ch; if (!k) return; const sc = curScene(); const getD = () => sc.drawings.find(x => S.sel && x.id === S.sel.id);
+  switch (k){
+    case 'runStyle': S.runStyle = el.value; if (!['run'].includes(S.tool)) setTool('run'); break;
+    case 'stamp': S.stamp = el.value; setTool('stamp'); break;
+    case 'newColor': S.drawColor = el.value; break;
+    case 'speed': S.speed = +el.value; break;
+    case 'teamForm': mutate(() => { S.proj.teams[el.dataset.team].form = el.value; }, false); break;
+    case 'anTarget': S.anTarget = el.value; draw(); break;
+    case 'offside': mutate(() => { sc.offside = el.value; }, false); break;
+    case 'track': mutate(() => { const id = S.sel.id; sc.offi[id].track = el.checked; if (!el.checked){ const f = sc.frames[fi()]; f[id] = {...f[id], d:r2(S.lastPos[id].d || 0)}; } }); break;
+    case 'sgFrom': mutate(() => { const g = sc.sights.find(x => x.id === S.sel.id); g.from = el.value; }); break;
+    case 'sgTo': mutate(() => { const g = sc.sights.find(x => x.id === S.sel.id); if (el.value){ g.to = el.value; g.pt = null; } }); break;
+    case 'sgOn': mutate(() => { const g = sc.sights.find(x => x.id === S.sel.id); g.on = el.checked; }, false); break;
+    case 'sgOnList': mutate(() => { const g = sc.sights.find(x => x.id === el.dataset.id); if (g) g.on = el.checked; }, false); break;
+    case 'drawColor': mutate(() => { const d = getD(); if (d) d.color = PALETTE[el.value] || null; }, false); break;
+    case 'dKind': mutate(() => { const d = getD(); d.kind = el.value; if (d.kind === 'flight' && !d.curve){ d.curve = true; d.c = curveCtrl(d.p0, d.p1, 0.18); } }); break;
+    case 'dDash': mutate(() => { getD().dash = el.checked; }, false); break;
+    case 'dCurve': mutate(() => { const d = getD(); d.curve = el.checked; d.c = el.checked ? curveCtrl(d.p0, d.p1, 0.22) : midp(d.p0, d.p1); }, false); break;
+    case 'dOwner': mutate(() => { getD().owner = el.value || null; }, false); break;
+    case 'dStep': mutate(() => { getD().step = +el.value; }, false); break;
+    case 'dZone': mutate(() => { getD().kind = el.value; }, false); break;
+    case 'dStamp': mutate(() => { getD().kind = el.value; }); break;
+  }
+});
+$('#sceneSel').addEventListener('change', e => { pause(); switchScene(+e.target.value); });
+document.addEventListener('toggle', e => { const d = e.target; if (d.matches && d.matches('details[data-sec]')) S.openSecs[d.dataset.sec] = d.open; }, true);
+document.addEventListener('keydown', e => {
+  const tag = (e.target.tagName || '').toLowerCase(); const typing = ['input','textarea','select'].includes(tag) && !(e.target.type === 'checkbox' || e.target.type === 'range');
+  if (!$('#modal').hidden){ if (e.key === 'Escape') closeModal(); return; }
+  if ((e.ctrlKey || e.metaKey) && !typing){
+    if (e.key.toLowerCase() === 'z' && !e.shiftKey){ e.preventDefault(); undo(); return; }
+    if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)){ e.preventDefault(); redo(); return; }
+  }
+  if (typing) return;
+  if (e.key === 'Escape'){ S.pending = null; S.draft = null; S.drag = null; setTool('select'); return; }
+  if (e.key === 'Delete' || e.key === 'Backspace'){ if (S.sel){ e.preventDefault(); deleteSelection(); } return; }
+  if (e.key === ' '){ e.preventDefault(); ACT.tlPlay(); return; }
+  if (e.key === 'v' || e.key === 'V'){ setTool('select'); return; }
+  if (e.key.startsWith('Arrow') && S.sel && (S.sel.k === 'ent' || S.sel.k === 'alt')){
+    e.preventDefault(); const st = e.shiftKey ? 2 : 0.25; let dx = 0, dy = 0;
+    if (e.key === 'ArrowLeft') dx = -st; if (e.key === 'ArrowRight') dx = st; if (e.key === 'ArrowUp') dy = -st; if (e.key === 'ArrowDown') dy = st;
+    if (S.orient === 'port'){ const t = dx; dx = dy; dy = -t; }
+    const sc = curScene();
+    if (S.sel.k === 'ent'){ if (sc.locked[S.sel.id]) return; const q = S.lastPos[S.sel.id]; mutate(() => setPos(S.sel.id, q.x + dx, q.y + dy), false); }
+    else { const a = sc.alts.find(x => x.id === S.sel.id); mutate(() => { a.x = r2(a.x + dx); a.y = r2(a.y + dy); }, false); }
+  }
+});
+
+/* ===================== Dialoge ===================== */
+function openModal(title, body, extraHead = ''){
+  const m = $('#modal'); m.innerHTML = `<div class="mbox" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="mhead"><h2>${esc(title)}</h2><span class="grow"></span>${extraHead}<button class="btn ghost" data-act="closeModal">Schließen</button></div><div class="mbody">${body}</div></div>`;
+  m.hidden = false; closeDrawers();
+}
+function closeModal(){ const m = $('#modal'); m.hidden = true; m.innerHTML = ''; if (askResolve){ askResolve(false); askResolve = null; } }
+$('#modal').addEventListener('pointerdown', e => { if (e.target.id === 'modal') closeModal(); });
+let askResolve = null;
+function ask(title, msg, ok){
+  return new Promise(res => {
+    openModal(title, `<p style="margin:0;line-height:1.5">${esc(msg)}</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="closeModal">Abbrechen</button><button class="btn primary" id="askOk">${esc(ok)}</button></div>`);
+    $('.mbox').style.maxWidth = '460px'; askResolve = res;
+    $('#askOk').addEventListener('click', () => { askResolve = null; const m = $('#modal'); m.hidden = true; m.innerHTML = ''; res(true); });
+  });
+}
+function previewSVG(sc, w){
+  const o = {proj:S.proj, rot:false, tog:{lines:true, cones:true, occl:true, dist:false, dirs:false, ghosts:false, master:true}, layers:{players:true, runs:true, sight:true, cones:true, occl:true, ghosts:false},
+    grid:false, showNames:false, mk:1.3, width:S.width, interactive:false, handles:false, sel:null, analysis:null};
+  return `<svg viewBox="-7 -7 119 82" ${w ? `width="${w}"` : ''} xmlns="http://www.w3.org/2000/svg">${buildWorld(sc, sc === curScene() ? S.t : (sc.at || 0), o)}</svg>`;
+}
+function openOverview(){
+  curScene().at = fi();
+  const cards = S.proj.scenes.map((sc, i) => `<div class="card${i === S.proj.cur ? ' cur' : ''}"><div data-act="openScene" data-i="${i}" title="Szene öffnen">${previewSVG(sc)}</div>
+    <div class="cb"><input type="text" id="ovn-${i}" data-in="sceneNameI" data-i="${i}" value="${esc(sc.name)}" aria-label="Szenenname">
+    <div class="hint">${sc.frames.length} Schritt${sc.frames.length > 1 ? 'e' : ''} · ${sc.sights.length} Sichtlinie${sc.sights.length === 1 ? '' : 'n'}${sc.notes ? ' · Notizen' : ''}</div>
+    <div class="row"><button class="btn small primary" data-act="openScene" data-i="${i}">Öffnen</button><button class="btn small" data-act="dupSceneI" data-i="${i}">Duplizieren</button><button class="btn small danger" data-act="delSceneI" data-i="${i}">Löschen</button></div></div></div>`).join('');
+  openModal(`Projektübersicht · ${S.proj.name}`, `<div class="row"><button class="btn primary" data-act="playAll">▶ Alle Szenen nacheinander abspielen</button><button class="btn" data-act="newSceneOv">+ Neue Szene</button><span class="hint">Duplizierte Szenen eignen sich zum Vergleich alternativer Positionierungen.</span></div><div class="cards">${cards}</div>`);
+  $('.mbox').style.maxWidth = '1100px';
+}
+Object.assign(ACT, {
+  openScene(b){ closeModal(); switchScene(+b.dataset.i); },
+  dupSceneI(b){ const i = +b.dataset.i; mutate(() => { const c = clone(S.proj.scenes[i]); c.id = uid(); c.name += ' (Variante)'; S.proj.scenes.splice(i + 1, 0, c); if (S.proj.cur > i) S.proj.cur++; }); openOverview(); },
+  async delSceneI(b){ const i = +b.dataset.i; if (S.proj.scenes.length < 2){ toast('Ein Projekt braucht mindestens eine Szene.'); return; }
+    const nm = S.proj.scenes[i].name; if (!await ask('Szene löschen?', `„${nm}“ wird gelöscht.`, 'Löschen')) { openOverview(); return; }
+    mutate(() => { S.proj.scenes.splice(i, 1); if (S.proj.cur >= i && S.proj.cur > 0) S.proj.cur--; S.t = curScene().at || 0; S.sel = null; }); openOverview(); },
+  playAll(){ closeModal(); switchScene(0, true); S.playAll = true; play(); },
+  newSceneOv(){ ACT.newScene(); openOverview(); },
+});
+
+function openProjects(){
+  const list = listProjects();
+  const rows = list.map(x => `<div class="plrow${x.id === S.proj.id ? ' cur' : ''}"><span class="nm">${esc(x.name)}</span><span class="hint">${x.scenes || '?'} Szenen · ${new Date(x.updated).toLocaleString('de-DE', {dateStyle:'short', timeStyle:'short'})}</span>
+    ${x.id !== S.proj.id ? `<button class="btn small primary" data-act="openProj" data-id="${x.id}">Öffnen</button>` : ''}<button class="btn small" data-act="dupProj" data-id="${x.id}">Duplizieren</button>${x.id !== S.proj.id ? `<button class="btn small danger" data-act="delProj" data-id="${x.id}">Löschen</button>` : ''}</div>`).join('');
+  openModal('Projekte', `<div><label class="lbl" for="pjName">Name des geöffneten Projekts</label><input type="text" id="pjName" data-in="projName" value="${esc(S.proj.name)}" style="width:100%;margin-top:4px"></div>
+    <div class="row"><button class="btn" data-act="exportJson">Als JSON exportieren</button><button class="btn" data-act="importJson">JSON importieren</button><button class="btn" data-act="newProj" data-ex="1">Neues Projekt mit Beispielszenen</button><button class="btn" data-act="newProj" data-ex="0">Neues leeres Projekt</button></div>
+    <div class="hint">${S.storageOK ? 'Projekte werden automatisch lokal in diesem Browser gespeichert. Für Sicherungen und den Austausch mit dem Gespann JSON exportieren.' : 'Lokales Speichern ist in dieser Ansicht nicht verfügbar. Bitte Projekte als JSON exportieren.'}</div>
+    <div><div class="lbl">Gespeicherte Projekte</div>${rows || '<p class="hint">Noch keine gespeicherten Projekte.</p>'}</div>`);
+}
+Object.assign(ACT, {
+  openProj(b){ const p = loadProject(b.dataset.id); if (!p){ toast('Projekt konnte nicht geladen werden.'); return; } saveNow(); S.proj = p; S.t = curScene().at || 0; S.undo = []; S.redo = []; S.sel = null; saveNow(); closeModal(); setView('full'); renderAll(); },
+  dupProj(b){ saveNow(); const p = b.dataset.id === S.proj.id ? clone(S.proj) : loadProject(b.dataset.id); if (!p) return; p.id = uid(); p.name += ' (Kopie)'; const keep = S.proj; S.proj = p; saveNow(); S.proj = keep; saveNow(); openProjects(); toast('Projekt dupliziert.'); },
+  async delProj(b){ const x = listProjects().find(q => q.id === b.dataset.id); if (!x) return; if (!await ask('Projekt löschen?', `„${x.name}“ wird endgültig aus diesem Browser entfernt.`, 'Endgültig löschen')){ openProjects(); return; }
+    store.del('p:' + x.id); store.set('index', JSON.stringify(listProjects().filter(q => q.id !== x.id))); openProjects(); },
+  newProj(b){ saveNow(); S.proj = newProject('Neues Projekt', b.dataset.ex === '1'); S.t = 0; S.undo = []; S.redo = []; S.sel = null; saveNow(); closeModal(); setView('full'); renderAll(); toast('Neues Projekt angelegt.'); },
+  exportJson(){ saveNow(); const name = (S.proj.name || 'projekt').replace(/[^\wäöüÄÖÜß-]+/g, '_') + '.json'; saveFile(name, JSON.stringify({app:'SR-Taktikboard', ...S.proj}, null, 1)); },
+  importJson(){ $('#fileIn').value = ''; $('#fileIn').click(); },
+});
+$('#fileIn').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  if (f.size > 8e6){ showImportError('Die Datei ist größer als 8 MB und wird nicht als Projekt erkannt.'); return; }
+  const rd = new FileReader();
+  rd.onload = () => {
+    let raw; try { raw = JSON.parse(rd.result); } catch (err) { showImportError('Die Datei ist kein gültiges JSON (' + err.message + ').'); return; }
+    try { const p = migrate(raw); const exists = listProjects().some(x => x.id === p.id); if (exists) p.id = uid(); saveNow(); S.proj = p; S.t = curScene().at || 0; S.undo = []; S.redo = []; S.sel = null; saveNow(); closeModal(); setView('full'); renderAll(); toast(`Projekt „${p.name}“ importiert (${p.scenes.length} Szenen).`); }
+    catch (err){ showImportError(err.message); }
+  };
+  rd.onerror = () => showImportError('Die Datei konnte nicht gelesen werden.');
+  rd.readAsText(f);
+});
+function showImportError(msg){ openModal('Import nicht möglich', `<p style="margin:0;line-height:1.5"><b>${esc(msg)}</b></p><p class="hint">Erwartet wird eine JSON-Datei, die mit „Als JSON exportieren“ aus dem SR-Taktikboard erzeugt wurde. Das bisher geöffnete Projekt bleibt unverändert.</p><div class="row"><button class="btn" data-act="projects">Zurück zu Projekte</button></div>`); }
+
+/* ===================== Export ===================== */
+const dlP = (window.claude && typeof window.claude.use === 'function') ? Promise.resolve(window.claude.use('downloads')).catch(() => null) : Promise.resolve(null);
+async function saveFile(name, data){
+  let dl = null; try { dl = await Promise.race([dlP, new Promise(r => setTimeout(() => r(null), 4000))]); } catch (e) { dl = null; }
+  if (dl){
+    try { await dl.save({filename:name, data}); toast('Gespeichert: ' + name); }
+    catch (err){ toast(err && err.code === 'declined' ? 'Speichern abgebrochen.' : 'Die Datei konnte hier nicht gespeichert werden' + (err && err.code ? ' (' + err.code + ')' : '') + '.'); }
+    return;
+  }
+  const blob = data instanceof Blob ? data : new Blob([data], {type:name.endsWith('.json') ? 'application/json' : 'application/octet-stream'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 3000); toast('Download gestartet: ' + name);
+}
+const EXP_KEYS = [['players','Spieler und Ball'],['runs','Laufwege und Zeichnungen'],['sight','Sichtlinien'],['cones','Sichtfelder'],['occl','Mögliche Sichtbehinderungen'],['ghosts','Frühere Positionen'],['notes','Notizen und Szenentitel']];
+let EXP = {fmt:'png', layers:{players:true, runs:true, sight:true, cones:true, occl:true, ghosts:false, notes:true}, scenes:null};
+function openExport(){
+  if (!EXP.scenes) EXP.scenes = {};
+  const pdfOk = !!(window.jspdf && window.jspdf.jsPDF);
+  openModal('Export', `<div><div class="lbl">Format</div><div class="checks" style="margin-top:6px">
+    ${[['png','PNG – aktuelle Szene'],['pdf1','PDF – aktuelle Szene'],['pdfN','PDF – mehrere Szenen'],['json','JSON – ganzes Projekt']].map(([k, l]) => `<label class="sw"><input type="radio" name="fmt" value="${k}" data-exp="fmt"${EXP.fmt === k ? ' checked' : ''}${k.startsWith('pdf') && !pdfOk ? ' disabled' : ''}> ${l}</label>`).join('')}</div>
+    ${pdfOk ? '' : '<p class="hint">PDF-Bibliothek konnte nicht geladen werden (offline?). PNG und JSON funktionieren weiterhin.</p>'}</div>
+    <div id="expScenes"${EXP.fmt === 'pdfN' ? '' : ' hidden'}><div class="lbl">Szenen</div><div class="checks" style="margin-top:6px">${S.proj.scenes.map((s, i) => `<label class="sw"><input type="checkbox" data-exps="${i}"${EXP.scenes[s.id] !== false ? ' checked' : ''}> ${i + 1}. ${esc(s.name)}</label>`).join('')}</div></div>
+    <div id="expLayers"${EXP.fmt === 'json' ? ' hidden' : ''}><div class="lbl">Sichtbare Elemente</div><div class="checks" style="margin-top:6px">${EXP_KEYS.map(([k, l]) => `<label class="sw"><input type="checkbox" data-expl="${k}"${EXP.layers[k] ? ' checked' : ''}> ${l}</label>`).join('')}</div>
+    <p class="hint">Exportiert wird jeweils der aktuell gewählte Schritt der Szene. PDF enthält zusätzlich die Positionierungsanalyse.</p></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="doExport" id="expBtn">Exportieren</button></div>`);
+  $('.mbox').style.maxWidth = '640px';
+}
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.dataset.exp === 'fmt'){ EXP.fmt = el.value; $('#expScenes').hidden = EXP.fmt !== 'pdfN'; $('#expLayers').hidden = EXP.fmt === 'json'; }
+  if (el.dataset.expl) EXP.layers[el.dataset.expl] = el.checked;
+  if (el.dataset.exps !== undefined){ const s = S.proj.scenes[+el.dataset.exps]; EXP.scenes[s.id] = el.checked; }
+});
+function wrapText(str, max){
+  const out = []; String(str || '').split('\n').forEach(par => {
+    let line = ''; par.split(/\s+/).forEach(w => { if ((line + ' ' + w).trim().length > max){ if (line) out.push(line); line = w; } else line = (line + ' ' + w).trim(); });
+    out.push(line);
+  });
+  while (out.length && !out[out.length - 1]) out.pop(); return out;
+}
+function exportSVG(sc, t, layers, withText){
+  const o = {proj:S.proj, rot:false, tog:{lines:true, cones:true, occl:layers.occl, dist:true, dirs:true, ghosts:true, master:true},
+    layers:{...layers, occl:layers.occl}, grid:S.grid, showNames:S.showNames, mk:S.mk, width:S.width, interactive:false, handles:false, sel:null,
+    analysis:S.anLines ? {target:anTargetFor(sc)} : null};
+  const inner = buildWorld(sc, t, o);
+  const top = withText ? 9 : 0; const lines = withText && sc.notes ? wrapText(sc.notes, 118) : [];
+  const notesH = withText ? (lines.length ? lines.length * 2.5 + 5 : 0) : 0;
+  const H = 82 + top + notesH; const vbY = -7 - top;
+  let head = '';
+  if (withText){
+    head += `<rect x="-7" y="${vbY}" width="119" height="${H}" fill="#ffffff"/>`;
+    head += `<text x="-5" y="${vbY + 5.2}" font-size="3.4" font-weight="700" fill="#16201B">${esc(sc.name)}</text>`;
+    head += `<text x="110" y="${vbY + 5.2}" font-size="1.7" text-anchor="end" fill="#56655D">${esc(S.proj.name)} · Schritt ${Math.round(t) + 1}/${sc.frames.length}</text>`;
+  }
+  let notes = '';
+  if (lines.length){ notes += `<text x="-5" y="${77.8}" font-size="1.9" font-weight="700" fill="#16201B">Notizen</text>`; lines.forEach((l, i) => { notes += `<text x="-5" y="${r2(80.6 + i * 2.5)}" font-size="1.75" fill="#16201B">${esc(l)}</text>`; }); }
+  return {svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-7 ${vbY} 119 ${r2(H)}"><style>text{font-family:Arial,Helvetica,sans-serif}</style>${head}<svg x="-7" y="-7" width="119" height="82" viewBox="-7 -7 119 82" overflow="hidden">${inner}</svg>${notes}</svg>`, ratio:H / 119};
+}
+function svgToCanvas(svgStr, w, h){
+  return new Promise((res, rej) => {
+    const img = new Image(); const url = URL.createObjectURL(new Blob([svgStr], {type:'image/svg+xml;charset=utf-8'}));
+    img.onload = () => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h); URL.revokeObjectURL(url); res(c); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Grafik konnte nicht gerendert werden.')); };
+    img.src = url;
+  });
+}
+const pdfTxt = s => String(s || '').replace(/[„“”]/g, '"').replace(/[‚‘’]/g, "'").replace(/[–—]/g, '-').replace(/→/g, '->').replace(/←/g, '<-').replace(/•/g, '-').replace(/×/g, 'x').replace(/[^\x00-\xFF]/g, '');
+const fileBase = s => String(s || 'szene').replace(/[^\wäöüÄÖÜß-]+/g, '_').slice(0, 60);
+ACT.doExport = async () => {
+  const btn = $('#expBtn'); if (btn){ btn.disabled = true; btn.textContent = 'Wird erstellt …'; }
+  try {
+    curScene().at = fi();
+    if (EXP.fmt === 'json'){ ACT.exportJson(); }
+    else if (EXP.fmt === 'png'){
+      const sc = curScene(); const {svg:s, ratio} = exportSVG(sc, S.t, EXP.layers, EXP.layers.notes); const w = 2400;
+      const c = await svgToCanvas(s, w, Math.round(w * ratio)); const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+      if (!blob) throw new Error('PNG konnte nicht erzeugt werden.'); await saveFile(fileBase(sc.name) + '.png', blob);
+    } else {
+      const list = EXP.fmt === 'pdf1' ? [curScene()] : S.proj.scenes.filter(s => EXP.scenes[s.id] !== false);
+      if (!list.length) throw new Error('Keine Szene ausgewählt.');
+      const doc = new window.jspdf.jsPDF({orientation:'landscape', unit:'mm', format:'a4'});
+      for (let i = 0; i < list.length; i++){
+        const sc = list[i]; const t = sc === curScene() ? S.t : (sc.at || 0); if (i) doc.addPage();
+        const {svg:s} = exportSVG(sc, t, EXP.layers, false); const c = await svgToCanvas(s, 2000, Math.round(2000 * 82 / 119));
+        const showText = EXP.layers.notes;
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(22, 32, 27);
+        if (showText) doc.text(pdfTxt(sc.name), 12, 14);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(86, 101, 93);
+        doc.text(pdfTxt(`${S.proj.name} - Szene ${S.proj.scenes.indexOf(sc) + 1} - Schritt ${Math.round(t) + 1}/${sc.frames.length}`), 285, 14, {align:'right'});
+        const iw = showText ? 186 : 273, ih = iw * 82 / 119; doc.addImage(c.toDataURL('image/png'), 'PNG', 12, 19, iw, ih);
+        if (showText){
+          let y = 24; const x = 204, wcol = 81;
+          doc.setTextColor(22, 32, 27); doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.text('Positionierungsanalyse', x, y); y += 5;
+          const an = analysisRows(sc, t); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.6);
+          doc.text(pdfTxt('Ziel: ' + entityLabel(S.proj, an.tgtId)), x, y); y += 4.4;
+          an.rows.forEach(r => {
+            const txt = pdfTxt(`${r.label}: ${fmtM(r.d)}, Sicht ${STATUS_TXT[r.status]}${r.blockers.length ? ' (' + r.blockers.map(b => entityLabel(S.proj, b)).join(', ') + ')' : ''}${r.inCone === null ? '' : r.inCone ? ', im Kegel' : ', außerhalb Kegel'}`);
+            doc.splitTextToSize(txt, wcol).forEach(l => { doc.text(l, x, y); y += 4; });
+          });
+          y += 3; doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.text('Notizen', x, y); y += 5;
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+          const nl = doc.splitTextToSize(pdfTxt(sc.notes || '-'), wcol);
+          for (const l of nl){ if (y > 200){ doc.addPage(); y = 16; } doc.text(l, x, y); y += 4.3; }
+          doc.setFontSize(7.5); doc.setTextColor(86, 101, 93);
+          doc.text(pdfTxt('Sichtanalyse = geometrische Näherung in der Draufsicht, keine verbindliche Aussage über die tatsächliche Sicht.'), 12, 203);
+        }
+      }
+      const blob = doc.output('blob');
+      await saveFile((EXP.fmt === 'pdf1' ? fileBase(curScene().name) : fileBase(S.proj.name) + '_Szenen') + '.pdf', blob);
+    }
+    closeModal();
+  } catch (err){ toast('Export fehlgeschlagen: ' + err.message); if (btn){ btn.disabled = false; btn.textContent = 'Exportieren'; } }
+};
+
+/* ===================== Start ===================== */
+function init(){
+  loadPrefs();
+  if (!S.hadPrefs && window.matchMedia('(max-width:640px)').matches) S.orient = 'port';
+  let p = null; const last = store.get('last'); if (last) p = loadProject(last);
+  if (!p){ const idx = listProjects(); if (idx.length) p = loadProject(idx[0].id); }
+  if (!p) p = newProject('Gespannsbesprechung (Beispiel)', true);
+  S.proj = p; S.t = curScene().at || 0;
+  renderToolbar(); setView('full'); renderAll(); saveNow();
+  if (!S.storageOK) toast('Lokales Speichern ist hier nicht verfügbar – Projekte bitte als JSON exportieren.');
+}
+init();
+
+</script>
