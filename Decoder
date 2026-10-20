@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code-Tool</title>
+<style>
+  :root {
+    --bg: #1a1a1a;
+    --card: #2b2b2b;
+    --field: #343638;
+    --border: #565b5e;
+    --text: #dce4ee;
+    --muted: #9a9a9a;
+    --accent: #1f6aa5;
+    --accent-hover: #144870;
+    --ok: #4caf50;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+  main { width: 100%; max-width: 560px; }
+  h1 { text-align: center; font-size: 28px; margin: 0 0 24px; }
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .tabs .sep { grid-column: 1 / -1; height: 4px; }
+  button {
+    font: inherit;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  button:hover { background: var(--accent-hover); }
+  .tabs button { background: var(--card); border: 1px solid var(--border); }
+  .tabs button:hover { background: #333; }
+  .tabs button.active { background: var(--accent); border-color: var(--accent); }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card h2 { margin: 0 0 14px; font-size: 20px; text-align: center; }
+  label { display: block; margin: 10px 0 6px; font-size: 14px; }
+  input, textarea {
+    width: 100%;
+    font: inherit;
+    color: var(--text);
+    background: var(--field);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+  textarea {
+    min-height: 110px;
+    resize: vertical;
+    word-break: break-all;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 14px;
+  }
+  .run { width: 100%; margin: 12px 0 4px; }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    gap: 12px;
+  }
+  .info { color: var(--muted); font-size: 14px; }
+  .info.ok { color: var(--ok); }
+</style>
+</head>
+<body>
+<main>
+  <h1>🔐 Code-Tool</h1>
+
+  <div class="tabs">
+    <button data-mode="enc" class="active">🔒 Verschlüsseln</button>
+    <button data-mode="dec">🔓 Entschlüsseln</button>
+    <div class="sep"></div>
+    <button data-mode="text_enc">✍️ Schrift verschlüsseln</button>
+    <button data-mode="text_dec">📖 Schrift entschlüsseln</button>
+  </div>
+
+  <section class="card">
+    <h2 id="titel"></h2>
+    <label for="eingabe" id="label"></label>
+    <input id="eingabe" autocomplete="off">
+    <button class="run" id="run"></button>
+    <label for="ausgabe">Ergebnis:</label>
+    <textarea id="ausgabe" readonly></textarea>
+    <div class="row">
+      <span class="info" id="info"></span>
+      <button id="copy">📋 Kopieren</button>
+    </div>
+  </section>
+</main>
+
+<script>
+// ---------------- Verschlüsselung ----------------
+// BigInt, weil die Zahlen bei vielen Runden sehr groß werden.
+
+function schritt(code, status) {
+  if (status === 1) return code * 7n + 42n - 7n - 108n;
+  if (status === 2) return code * 4n + 12n - 5n - 356n;
+  return code * 2n + 67n - 9n - 230n;
+}
+
+function zufall(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function verschluesseln(code) {
+  code = BigInt(code);
+  const number = zufall(5, 10);
+  let teile = "";
+  for (let i = 0; i < number; i++) {
+    const status = zufall(1, 3);
+    code = schritt(code, status);
+    teile += `${number}${status}${code}`;
+  }
+  return teile;
+}
+
+// Führende Nullen bleiben erhalten: vorne kommt eine 1 dran,
+// und eine "0" am Anfang kennzeichnet dieses Format.
+function codeVerschluesseln(ziffern) {
+  return "0" + verschluesseln("1" + ziffern);
+}
+
+// ---------------- Entschlüsselung ----------------
+
+const UMKEHR = { 1: [7n, 73n], 2: [4n, 349n], 3: [2n, 172n] }; // schritt(c) = m*c - k
+
+function entschluesseln(geheim) {
+  geheim = geheim.trim();
+  if (geheim.startsWith("0")) {
+    return startwerte(geheim.slice(1))
+      .map(String)
+      .filter(s => s.startsWith("1") && s.length > 1)
+      .map(s => s.slice(1));
+  }
+  return startwerte(geheim).map(String);
+}
+
+function rundenKennung(geheim) {
+  const n = geheim.startsWith("10") ? "10" : geheim.slice(0, 1);
+  if (!/^\d+$/.test(n)) return null;
+  const z = parseInt(n, 10);
+  if (z < 5 || z > 10) return null;
+  return [n, z];
+}
+
+function startwerte(geheim) {
+  const kennung = rundenKennung(geheim);
+  if (!kennung) return [];
+  const [n, runden] = kennung;
+  let pos = n.length;
+  if (pos >= geheim.length || !"123".includes(geheim[pos])) return [];
+  const [m, k] = UMKEHR[geheim[pos]];
+  pos += 1;
+  const treffer = [];
+  for (let ende = pos + 1; ende <= geheim.length; ende++) {
+    const stueck = geheim.slice(pos, ende);
+    if (!/^-?\d+$/.test(stueck)) continue;
+    const wert = BigInt(stueck) + k;
+    if (wert % m !== 0n) continue;
+    const start = wert / m;
+    if (start >= 0n && passt(geheim, n, runden, start)) treffer.push(start);
+  }
+  return treffer;
+}
+
+function passt(geheim, n, runden, start) {
+  let code = start;
+  let pos = 0;
+  for (let i = 0; i < runden; i++) {
+    if (!geheim.startsWith(n, pos)) return false;
+    pos += n.length;
+    if (pos >= geheim.length || !"123".includes(geheim[pos])) return false;
+    const status = parseInt(geheim[pos], 10);
+    pos += 1;
+    code = schritt(code, status);
+    const teil = code.toString();
+    if (!geheim.startsWith(teil, pos)) return false;
+    pos += teil.length;
+  }
+  return pos === geheim.length;
+}
+
+// ---------------- Schrift (Text) ----------------
+
+function textVerschluesseln(text) {
+  return Array.from(text, z => verschluesseln(z.codePointAt(0))).join(" ");
+}
+
+function zeichenEntschluesseln(geheim) {
+  for (const start of startwerte(geheim)) {
+    if (start < 0x110000n) return String.fromCodePoint(Number(start));
+  }
+  return null;
+}
+
+function textEntschluesseln(geheim) {
+  let ergebnis = "";
+  for (const teil of geheim.split(/\s+/).filter(Boolean)) {
+    const z = zeichenEntschluesseln(teil);
+    if (z === null) return null;
+    ergebnis += z;
+  }
+  return ergebnis;
+}
+
+// ---------------- Logik der Knöpfe ----------------
+
+function klickVerschluesseln(cod) {
+  if (/^\d+$/.test(cod)) return [codeVerschluesseln(cod), ""];
+  return ["", "Bitte nur Ziffern eingeben."];
+}
+
+function klickEntschluesseln(geheim) {
+  if (!/^-?[\d-]*\d[\d-]*$/.test(geheim)) return ["", "Nur Zahlen (und Minus) erlaubt."];
+  const treffer = entschluesseln(geheim);
+  if (!treffer.length) return ["", "Kein gültiger Code gefunden."];
+  return [treffer.join(", "), treffer.length === 1 ? "" : "Mehrere mögliche Codes"];
+}
+
+function klickTextVerschluesseln(text) {
+  if (!text) return ["", "Bitte Text eingeben."];
+  return [textVerschluesseln(text), ""];
+}
+
+function klickTextEntschluesseln(geheim) {
+  if (!geheim || !/^[\d\- ]+$/.test(geheim)) return ["", "Nur Zahlen, Minus und Leerzeichen erlaubt."];
+  const text = textEntschluesseln(geheim);
+  if (text === null) return ["", "Kein gültiger Text gefunden."];
+  return [text, ""];
+}
+
+// ---------------- Oberfläche ----------------
+
+const MODI = {
+  enc:      { titel: "Verschlüsseln", label: "Code (beliebig viele Ziffern) eingeben:",
+              platz: "z. B. 1234", knopf: "Verschlüsseln", befehl: klickVerschluesseln },
+  dec:      { titel: "Entschlüsseln", label: "Verschlüsselte Zahlenkette eingeben:",
+              platz: "Zahlenkette einfügen …", knopf: "Entschlüsseln", befehl: klickEntschluesseln },
+  text_enc: { titel: "Schrift verschlüsseln", label: "Text eingeben:",
+              platz: "z. B. Hallo Welt", knopf: "Verschlüsseln", befehl: klickTextVerschluesseln },
+  text_dec: { titel: "Schrift entschlüsseln", label: "Verschlüsselten Text eingeben:",
+              platz: "Zahlenketten einfügen …", knopf: "Entschlüsseln", befehl: klickTextEntschluesseln },
+};
+
+if (typeof document !== "undefined") {
+  const $ = id => document.getElementById(id);
+  let modus = "enc";
+  const merker = {}; // Eingaben pro Modus merken, wie getrennte Fenster
+
+  function setzeInfo(text, ok = false) {
+    $("info").textContent = text;
+    $("info").classList.toggle("ok", ok);
+  }
+
+  function wechsle(neu) {
+    merker[modus] = { ein: $("eingabe").value, aus: $("ausgabe").value, info: $("info").textContent };
+    modus = neu;
+    const m = MODI[neu];
+    $("titel").textContent = m.titel;
+    $("label").textContent = m.label;
+    $("eingabe").placeholder = m.platz;
+    $("run").textContent = m.knopf;
+    const alt = merker[neu] || { ein: "", aus: "", info: "" };
+    $("eingabe").value = alt.ein;
+    $("ausgabe").value = alt.aus;
+    setzeInfo(alt.info);
+    document.querySelectorAll(".tabs button").forEach(b =>
+      b.classList.toggle("active", b.dataset.mode === neu));
+    $("eingabe").focus();
+  }
+
+  function ausfuehren() {
+    const [text, info] = MODI[modus].befehl($("eingabe").value.trim());
+    $("ausgabe").value = text;
+    setzeInfo(info);
+  }
+
+  async function kopieren() {
+    const text = $("ausgabe").value.trim();
+    if (!text) { setzeInfo("Nichts zum Kopieren"); return; }
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      $("ausgabe").select();
+      document.execCommand("copy");
+    }
+    setzeInfo("✓ Kopiert!", true);
+    setTimeout(() => setzeInfo(""), 1500);
+  }
+
+  document.querySelectorAll(".tabs button").forEach(b =>
+    b.addEventListener("click", () => wechsle(b.dataset.mode)));
+  $("run").addEventListener("click", ausfuehren);
+  $("eingabe").addEventListener("keydown", e => { if (e.key === "Enter") ausfuehren(); });
+  $("copy").addEventListener("click", kopieren);
+  wechsle("enc");
+}
+</script>
+</body>
+</html>
